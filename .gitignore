@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 .idea
+.vscode
 
 __pycache__/
 *.py[cod]
@@ -146,3 +147,5 @@ experiments/
 
 # folder to keep random crap
 sheh_draft/
+
+sync*.sh
