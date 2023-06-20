@@ -1,7 +1,8 @@
 # TODOS
 
 ### Task 1
-- [ ] create new module to work in
+- [X] create new module to work in
+  - nes/nasbench201/scripts/run_hp_search.py
 - [ ] find a base architecture from the paper
   - where to download?
   - reset parameters -> only keep architecture
