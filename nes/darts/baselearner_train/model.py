@@ -178,7 +178,7 @@ class DARTSByGenotype(nn.Module):
 
 
     @classmethod
-    def base_learner_train_save(cls, seed_init, arch_id, genotype, train_loader,
+    def base_learner_train_save(cls, seed_init, hp_id, genotype, train_loader,
                                 test_loader, num_epochs, save_path, device,
                                 verbose=False, logger=None, dataset='fmnist',
                                 debug=False, global_seed=1, lr=0.025,
@@ -286,24 +286,24 @@ class DARTSByGenotype(nn.Module):
 
                 if verbose:
                     if (i + 1) % 100 == 0:
-                        logger.info('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Anch_loss: {:.4f}, Accuracy: {:.4f}. Model_ID: (arch {}, init {})'.format(epoch + 1, num_epochs, i + 1, total_step, loss_nll.item(), anch_reg_to_print, correct / total, arch_id, seed_init))
+                        logger.info('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Anch_loss: {:.4f}, Accuracy: {:.4f}. Model_ID: (hp_id {}, init {})'.format(epoch + 1, num_epochs, i + 1, total_step, loss_nll.item(), anch_reg_to_print, correct / total, hp_id, seed_init))
 
             scheduler.step()
             if debug:
                 break
 
-        logger.info('Training completed for model (arch {}, init {}) in {} '
-                    'secs.'.format(arch_id, seed_init, round(time.time() -
+        logger.info('Training completed for model (hp {}, init {}) in {} '
+                    'secs.'.format(hp_id, seed_init, round(time.time() -
                     start_time, 2)))
 
         # save model checkpoint
         model_save_path = os.path.join(
-            save_path, f"arch_{arch_id}_init_{seed_init}_epoch_{num_epochs}.pt"
+            save_path, f"hp_{hp_id}_init_{seed_init}_epoch_{num_epochs}.pt"
         )
         torch.save(model.state_dict(), model_save_path)
         logger.info(
-            'Saved model (arch {}, init {}) after epoch {} in {} '
-            'secs.'.format(arch_id, seed_init, num_epochs, round(time.time()
+            'Saved model (hp {}, init {}) after epoch {} in {} '
+            'secs.'.format(hp_id, seed_init, num_epochs, round(time.time()
             - start_time, 2)))
 
         return model
