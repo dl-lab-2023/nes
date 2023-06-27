@@ -1,6 +1,7 @@
 import os
 import copy
 import random
+from typing import Any, Dict, Tuple
 import numpy as np
 
 from nes.ensemble_selection.config import model_seeds
@@ -73,6 +74,27 @@ def sample_random_genotype():
     return arch_str, sampled_ops
 
 
+def sample_random_genotype_hp() -> Tuple[str, Dict[str, Any]]:
+    """
+    returns random hps every time you call the function
+    :returns: string-id, dictionary with hps
+    """
+    sampled_hps = {
+        'lr': np.random.choice([0.1, 0.01, 0.001]),
+        'optimizer': np.random.choice(['Adam', 'SGD', 'RMSprop']),  # https://pytorch.org/docs/stable/optim.html
+        'sgd-momentum': np.random.choice([0.9]),
+        'sgd-weight-decay': np.random.choice([3e-5])
+    }
+
+    id = ""
+    for hp_name, hp_value in sampled_hps.items():
+        id = id + f"{hp_name}-{hp_value}|"
+
+    id = id[:-1]  # Remove last "|" character
+
+    return id, sampled_hps
+
+
 def save_and_predict(genotype, arch_id, args):
     genotype_save_foldername = os.path.join(args.working_directory,
                                             'history')
@@ -95,3 +117,4 @@ def save_and_predict(genotype, arch_id, args):
                    budget=200,
                    config_id=arch_id,
                    seed_id=arch_id)
+
