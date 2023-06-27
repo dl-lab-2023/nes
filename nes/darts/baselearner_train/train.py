@@ -1,25 +1,24 @@
-import logging
 import os
-from pathlib import Path
-
+import logging
 import torch
+from pathlib import Path
 
 from nes.darts.baselearner_train.model import DARTSByGenotype as model_cifar
 from nes.darts.baselearner_train.model_imagenet import DARTSByGenotype as model_tiny
 from nes.utils.data_loaders import build_dataloader_tiny as dataloader_tiny, \
-    build_dataloader_fmnist as dataloader_fmnist, \
-    build_dataloader_cifar_c as dataloader_cifar
+                                   build_dataloader_fmnist as dataloader_fmnist, \
+                                   build_dataloader_cifar_c as dataloader_cifar
 
 
-def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
+def run_train(seed, arch_id, arch, num_epochs, bslrn_batch_size, exp_name,
               logger, data_path='data', mode='train', debug=False,
               anchor=False, dataset='fmnist', global_seed=0, n_workers=4,
-              anch_coeff=1, n_datapoints=None, hp_config={}, **kwargs):
+              anch_coeff=1, n_datapoints=None, **kwargs):
     """Function that trains a given architecture.
 
     Args:
         seed                 (int): seed number
-        hp_id                (int): hyperparameter combination id
+        arch_id              (int): architecture id
         arch                 (str): architecture genotype as string
         num_epochs           (int): number of epochs to train
         bslrn_batch_size     (int): mini-batch size
@@ -44,7 +43,7 @@ def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
 
     Path(exp_name).mkdir(parents=True, exist_ok=True)
     fh = logging.FileHandler(os.path.join(exp_name,
-                                          f"hp{hp_id}.log"), mode='w')
+                                          f"arch{arch_id}.log"), mode='w')
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
 
@@ -72,10 +71,10 @@ def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
     else:
         dataloader_val = None
 
-    logger.info(f"[{mode}] (hp {hp_id}: {genotype}, init: {seed})...")
+    logger.info(f"[{mode}] (arch {arch_id}: {genotype}, init: {seed})...")
 
     model_type.base_learner_train_save(seed_init=seed,
-                                       hp_id=hp_id,
+                                       arch_id=arch_id,
                                        genotype=genotype,
                                        train_loader=dataloader_train,
                                        test_loader=dataloader_val,
@@ -89,5 +88,4 @@ def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
                                        anchor=anchor,
                                        anch_coeff=anch_coeff,
                                        logger=logger,
-                                       hp_config=hp_config,
                                        **kwargs)
