@@ -207,24 +207,12 @@ class DARTSByGenotype(nn.Module):
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                                num_epochs)
 
-        ###### ANCHORING SETUP
-        if anchor:
-            model_for_init = cls(genotype=genotype, seed_init=seed_init+13452,
-                                 dataset=dataset, global_seed=global_seed+13452,
-                                 n_layers=n_layers, init_channels=init_channels)
-            model_for_init.to(device)
-
-            anchor_params = [(p.data.clone(), get_init_std(p)) for p in
-                             model_for_init.parameters()]
-            assert all((not p.requires_grad) for p, _ in anchor_params)
-        ###### END ANCHORING SETUP
-
-
         start_time = time.time()
         torch.manual_seed(0)
         total_step = len(train_loader)
 
         # Train the model
+        # TODO: replace this by the TAB paper training loop #############################################
         for epoch in range(num_epochs):
             for i, (images, labels) in enumerate(train_loader):
 
@@ -234,42 +222,7 @@ class DARTSByGenotype(nn.Module):
 
                 outputs = model(images)
                 outputs = outputs.log_softmax(1)
-                loss_nll = criterion(outputs, labels)
-
-                ### START ANCHORED ###
-                if anchor:
-                    anch_reg = 0
-                    # leave out the weight and bias of the final fc layer
-                    for p, (p_anch, init_std) in zip(list(model.parameters())[:-2], anchor_params[:-2]):
-                        assert p.dim() in [1, 4]
-                        if p.dim() == 1: # skip batch norm params
-                            continue
-
-                        anch_reg += (1 / (2 * init_std**2)) * (p - p_anch).pow(2).sum()
-
-                    # final layer weight
-                    for p, (p_anch, init_std) in zip(list(model.parameters())[-2:-1], anchor_params[-2:-1]):
-                        assert p.dim() in [2]
-                        anch_reg += (1 / (2 * init_std**2)) * (p - p_anch).pow(2).sum()
-
-                    # p is the weight matrix of last layer
-                    fan_in, _ = init._calculate_fan_in_and_fan_out(p)
-                    # std of init of bias of last layer
-                    init_std = 1 / math.sqrt(3 * fan_in)
-
-                    # final layer bias
-                    for p, (p_anch, _) in zip(list(model.parameters())[-1:], anchor_params[-1:]):
-                        assert p.dim() in [1]
-                        assert p.shape[0] == model.num_classes
-                        anch_reg += (1 / (2 * init_std**2)) * (p - p_anch).pow(2).sum()
-
-                    anch_reg = anch_reg / len(train_loader.dataset) # num_datapoints
-                    loss = loss_nll + anch_coeff * anch_reg
-                    anch_reg_to_print = anch_reg.item()
-                else:
-                    loss = loss_nll
-                    anch_reg_to_print = 0
-                ### END ANCHORED ###
+                loss = criterion(outputs, labels)
 
                 total = labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
@@ -286,7 +239,7 @@ class DARTSByGenotype(nn.Module):
 
                 if verbose:
                     if (i + 1) % 100 == 0:
-                        logger.info('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Anch_loss: {:.4f}, Accuracy: {:.4f}. Model_ID: (hp_id {}, init {})'.format(epoch + 1, num_epochs, i + 1, total_step, loss_nll.item(), anch_reg_to_print, correct / total, hp_id, seed_init))
+                        logger.info('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.4f}. Model_ID: (hp_id {}, init {})'.format(epoch + 1, num_epochs, i + 1, total_step, loss_nll.item(), correct / total, hp_id, seed_init))
 
             scheduler.step()
             if debug:
