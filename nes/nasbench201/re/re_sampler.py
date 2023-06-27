@@ -1,6 +1,7 @@
 import os
 import copy
 import random
+from typing import Any, Dict, Tuple
 import numpy as np
 
 from nes.ensemble_selection.config import model_seeds
@@ -73,7 +74,7 @@ def sample_random_genotype():
     return arch_str, sampled_ops
 
 
-def sample_random_genotype_hp() -> (str, Dict[str, Any]):
+def sample_random_genotype_hp() -> Tuple[str, Dict[str, Any]]:
     """
     returns random hps every time you call the function
     :returns: string-id, dictionary with hps
@@ -84,7 +85,13 @@ def sample_random_genotype_hp() -> (str, Dict[str, Any]):
         'sgd-momentum': np.random.choice([0.9]),
         'sgd-weight-decay': np.random.choice([3e-5])
     }
-    id = f"lr-{sampled_hps['lr']}|optim-{sampled_hps['optimizer']}"
+
+    id = ""
+    for hp_name, hp_value in sampled_hps.items():
+        id = id + f"{hp_name}-{hp_value}|"
+
+    id = id[:-1]  # Remove last "|" character
+
     return id, sampled_hps
 
 
