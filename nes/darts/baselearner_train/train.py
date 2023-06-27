@@ -1,19 +1,20 @@
-import os
 import logging
-import torch
+import os
 from pathlib import Path
+
+import torch
 
 from nes.darts.baselearner_train.model import DARTSByGenotype as model_cifar
 from nes.darts.baselearner_train.model_imagenet import DARTSByGenotype as model_tiny
 from nes.utils.data_loaders import build_dataloader_tiny as dataloader_tiny, \
-                                   build_dataloader_fmnist as dataloader_fmnist, \
-                                   build_dataloader_cifar_c as dataloader_cifar
+    build_dataloader_fmnist as dataloader_fmnist, \
+    build_dataloader_cifar_c as dataloader_cifar
 
 
 def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
               logger, data_path='data', mode='train', debug=False,
               anchor=False, dataset='fmnist', global_seed=0, n_workers=4,
-              anch_coeff=1, n_datapoints=None, **kwargs):
+              anch_coeff=1, n_datapoints=None, hp_config={}, **kwargs):
     """Function that trains a given architecture.
 
     Args:
@@ -88,5 +89,5 @@ def run_train(seed, hp_id, arch, num_epochs, bslrn_batch_size, exp_name,
                                        anchor=anchor,
                                        anch_coeff=anch_coeff,
                                        logger=logger,
+                                       hp_config=hp_config,
                                        **kwargs)
-

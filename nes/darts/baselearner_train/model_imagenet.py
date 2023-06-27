@@ -213,14 +213,14 @@ class DARTSByGenotype(nn.Module):
                                 debug=False, global_seed=1, lr=0.1, wd=3e-5,
                                 grad_clip=True, n_layers=8, init_channels=36,
                                 scheduler='cosine', drop_path_prob=.3,
-                                anchor=False, anch_coeff=1, **kwargs):
+                                anchor=False, anch_coeff=1, hp_config={}, **kwargs):
         '''This function is the main training loop that trains and saves the
         model (at various checkpoints)'''
 
         if logger is None:
             raise ValueError("No logger provided.")
 
-        learning_rate = lr
+        learning_rate = hp_config['lr']
 
         # Initialize architecture and weights using genotype and initialization seed.
         model = cls(genotype=genotype, seed_init=seed_init, dataset=dataset,
@@ -235,9 +235,12 @@ class DARTSByGenotype(nn.Module):
 
         # Loss and optimizer mostly using default settings from DARTS paper.
         criterion = nn.NLLLoss().to(device)
-        #criterion_smooth = CrossEntropyLabelSmooth(200, 0.1)
-        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
-                                    momentum=0.9, weight_decay=wd)
+        # criterion_smooth = CrossEntropyLabelSmooth(200, 0.1)
+        if hp_config['optimizer'] == 'Adam':
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        if hp_config['optimizer'] == 'SGD':
+            torch.optim.SGD(model.parameters(), lr=learning_rate,
+                            momentum=hp_config['sgd-momentum'], weight_decay=hp_config['sgd-weight-decay'])
 
         if scheduler == 'cosine':
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
