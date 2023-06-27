@@ -73,6 +73,21 @@ def sample_random_genotype():
     return arch_str, sampled_ops
 
 
+def sample_random_genotype_hp() -> (str, Dict[str, Any]):
+    """
+    returns random hps every time you call the function
+    :returns: string-id, dictionary with hps
+    """
+    sampled_hps = {
+        'lr': np.random.choice([0.1, 0.01, 0.001]),
+        'optimizer': np.random.choice(['Adam', 'SGD', 'RMSprop']),  # https://pytorch.org/docs/stable/optim.html
+        'sgd-momentum': np.random.choice([0.9]),
+        'sgd-weight-decay': np.random.choice([3e-5])
+    }
+    id = f"lr-{sampled_hps['lr']}|optim-{sampled_hps['optimizer']}"
+    return id, sampled_hps
+
+
 def save_and_predict(genotype, arch_id, args):
     genotype_save_foldername = os.path.join(args.working_directory,
                                             'history')
