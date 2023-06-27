@@ -212,6 +212,103 @@ class DARTSByGenotype(nn.Module):
         total_step = len(train_loader)
 
         # Train the model
+        for epoch in range(num_epochs):
+            for i, (images, labels) in enumerate(train_loader):
+
+                if images.device.type == "cpu" or labels.device.type == "cpu":
+                    images = images.to(device)
+                    labels = labels.to(device)
+
+                outputs = model(images)
+                outputs = outputs.log_softmax(1)
+                loss = criterion(outputs, labels)
+
+                total = labels.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                correct = (predicted == labels).sum().item()
+
+                if torch.isnan(loss):
+                    raise ValueError("Training failed. Loss is NaN.")
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                if debug:
+                    break
+
+                if verbose:
+                    if (i + 1) % 100 == 0:
+                        logger.info('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.4f}. Model_ID: (hp_id {}, init {})'.format(epoch + 1, num_epochs, i + 1, total_step, loss_nll.item(), correct / total, hp_id, seed_init))
+
+            scheduler.step()
+            if debug:
+                break
+
+        logger.info('Training completed for model (hp {}, init {}) in {} '
+                    'secs.'.format(hp_id, seed_init, round(time.time() -
+                    start_time, 2)))
+
+        # save model checkpoint
+        model_save_path = os.path.join(
+            save_path, f"hp_{hp_id}_init_{seed_init}_epoch_{num_epochs}.pt"
+        )
+        torch.save(model.state_dict(), model_save_path)
+        logger.info(
+            'Saved model (hp {}, init {}) after epoch {} in {} '
+            'secs.'.format(hp_id, seed_init, num_epochs, round(time.time()
+            - start_time, 2)))
+
+        return model
+
+
+class TABExperiment(nn.Module):
+    def __init__(self, genotype, seed_init, dataset='fmnist', global_seed=1,
+                 n_layers=8, init_channels=16, auxiliary_head=False,
+                 drop_prob=0.3, **kwargs):
+        super(TABExperiment, self).__init__()
+
+        torch.manual_seed(seed_init + 400 * (global_seed - 1)) # TODO: global seed shouldn't be handled like this. what if we change max ensemble size (i.e. 30)?
+        self.model = TODO # TODO ###################################################
+
+    def forward(self, x):
+        return self.model(x)[0]
+
+
+    @classmethod
+    def base_learner_train_save(cls, seed_init, hp_id, genotype, train_loader,
+                                test_loader, num_epochs, save_path, device,
+                                verbose=False, logger=None, dataset='fmnist',
+                                debug=False, global_seed=1, lr=0.025,
+                                wd=3e-4, n_layers=8, anchor=False, anch_coeff=1,
+                                init_channels=16, drop_prob= 0.3, **kwargs):
+        '''This function is the main training loop that trains and saves the
+        model (at various checkpoints)'''
+
+        if logger is None:
+            raise ValueError("No logger provided.")
+
+        learning_rate = lr
+        print(lr, wd, anch_coeff)
+        print('##################################')
+
+        # Initialize architecture and weights using genotype and initialization seed.
+        model = cls(genotype=genotype, seed_init=seed_init, dataset=dataset,
+                    global_seed=global_seed, n_layers=n_layers,
+                    init_channels=init_channels, drop_prob=drop_prob)
+        model.to(device)
+
+        # Loss and optimizer mostly using default settings from DARTS paper.
+        criterion = nn.NLLLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
+                                    momentum=0.9, weight_decay=wd)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                               num_epochs)
+
+        start_time = time.time()
+        torch.manual_seed(0)
+        total_step = len(train_loader)
+
+        # Train the model
         # TODO: replace this by the TAB paper training loop #############################################
         for epoch in range(num_epochs):
             for i, (images, labels) in enumerate(train_loader):
