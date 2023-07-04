@@ -29,12 +29,13 @@ def seeds(seed: int):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False  # see docs, set to false to disable NON-deterministic algorithms
+    # see docs, set to false to disable NON-deterministic algorithms
+    torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
 
 
-def configurations(seed: int) -> Configuration: 
-    
+def configurations(seed: int) -> Configuration:
+
     cs = ConfigurationSpace({
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "weight_decay": Float("weight_decay", bounds=(0.001, 0.1), log=True),
@@ -67,13 +68,14 @@ class Tabulartrain(nn.Module):
         self.model = MLP(input_size, hidden_size)
 
     def _get_hidden_size(self, input_size):
-        hidden_size = int(input_size * 0.5)  # Adjust the factor based on your preference
+        # Adjust the factor based on your preference
+        hidden_size = int(input_size * 0.5)
         return hidden_size
-    
+
     def forward(self, x):
         self.model.forward(x)
 
-    def base_learner_train_save(self, seed, config_space, train_loader, test_loader, 
+    def base_learner_train_save(self, seed, config_space, train_loader, test_loader,
                                 save_path, device):
 
         learning_rate = config_space["learning_rate"]
@@ -85,9 +87,11 @@ class Tabulartrain(nn.Module):
         criterion = nn.NLLLoss()
 
         if optim == 'SGD':
-            optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate, weight_decay=wd)
+            optimizer = torch.optim.SGD(
+                self.model.parameters(), lr=learning_rate, weight_decay=wd)
         elif optim == 'Adam':
-            optimizer  = torch.optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=wd)
+            optimizer = torch.optim.Adam(
+                self.model.parameters(), lr=learning_rate, weight_decay=wd)
 
         start_time = time.time()
         torch.manual_seed(0)
@@ -110,8 +114,8 @@ class Tabulartrain(nn.Module):
                 optimizer.step()
 
         logging.info('Training completed for model (config space {}, init {}) in {} '
-                'secs.'.format(config_space, round(time.time() -
-                start_time, 2)))
+                     'secs.'.format(config_space, round(time.time() -
+                                                        start_time, 2)))
 
         model_save_path = os.path.join(
             save_path, f"config_space_{config_space}_init_{seed}_epoch_{num_epochs}.pt"
@@ -120,7 +124,7 @@ class Tabulartrain(nn.Module):
         logging.info(
             'Saved model (arch {}, init {}) after epoch {} in {} '
             'secs.'.format(config_space, seed, num_epochs, round(time.time()
-            - start_time, 2)))
+                                                                 - start_time, 2)))
 
         return self.model
 
@@ -151,13 +155,14 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
     # the user matches the autopytorch requirements
     input_validator = TabularInputValidator(
         is_classification=True,
-        #logger_port=self._logger_port,
+        # logger_port=self._logger_port,
     )
 
     # Fit a input validator to check the provided data
     # Also, an encoder is fit to both train and test data,
     # to prevent unseen categories during inference
-    input_validator.fit(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test)
+    input_validator.fit(X_train=X_train, y_train=y_train,
+                        X_test=X_test, y_test=y_test)
 
     dataset = TabularDataset(
         X=X_train, Y=y_train,
@@ -169,11 +174,10 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
         seed=seed
     )
 
-   
-    train_loader = DataLoader(dataset.train_tensors)
+    train_loader = DataLoader(dataset)
     test_loader = DataLoader(dataset.test_tensors)
 
-    return train_loader, test_loader
+    return train_loader, test_loader, X_train.shape, y_train.shape
 
 
 # Define the train function to train
@@ -204,9 +208,17 @@ def run_train(seed):
 
     config_space = configurations(seed)
 
-    train_loader, test_loader = dataloader(seed, batch_size=16)
+    train_loader, test_loader, X_train_shape, y_train_shape = dataloader(
+        seed, batch_size=16)
 
-    model = Tabulartrain(train_loader.shape[0][1])
+    if len(y_train_shape) == 1:
+        model_out_shape = 1
+    elif len(y_train_shape) == 2:
+        model_out_shape = y_train_shape[1]
+    else:
+        raise NotImplementedError()
+
+    model = Tabulartrain(model_out_shape)
     model.to(device)
 
     logging.info(f" (configurations {config_space}, init: {seed})...")
@@ -214,14 +226,15 @@ def run_train(seed):
     model.base_learner_train_save(
         seed=seed,
         config_space=config_space,
-        train_loader = train_loader,
-        test_loader = test_loader,
+        train_loader=train_loader,
+        test_loader=test_loader,
         device=device,
         save_path='./saved_model',
     )
 
 # Get the outputs and print them
 
+
 if __name__ == '__main__':
-    
+
     run_train(seed=1)
