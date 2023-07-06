@@ -41,11 +41,11 @@ class MLP(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(MLP, self).__init__()
         self.relu = nn.ReLU()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2))
-        self.fc3 = nn.Linear(int(hidden_size // 2), 1)
+        self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float64)
+        self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2), dtype=torch.float64)
+        self.fc3 = nn.Linear(int(hidden_size // 2), 1, dtype=torch.float64)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         x = self.fc3(x)
