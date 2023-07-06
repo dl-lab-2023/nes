@@ -1,26 +1,18 @@
+import logging
+import os
+import random
+import time
+
 import numpy as np
+import openml
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import argparse
-import time
-import os
-from pathlib import Path
-import sys
-import logging
-import pandas
-import random
-
-from sklearn.model_selection import train_test_split
-
-import openml
-from torch.utils.data import DataLoader, TensorDataset
-
 from ConfigSpace import ConfigurationSpace, Float, Configuration
-
 from autoPyTorch.data.tabular_validator import TabularInputValidator
 from autoPyTorch.datasets.resampling_strategy import HoldoutValTypes
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 
 
 def seeds(seed: int):
@@ -35,7 +27,6 @@ def seeds(seed: int):
 
 
 def configurations(seed: int) -> Configuration:
-
     cs = ConfigurationSpace({
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "weight_decay": Float("weight_decay", bounds=(0.001, 0.1), log=True),
@@ -51,8 +42,8 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, int(hidden_size//2))
-        self.fc3 = nn.Linear(int(hidden_size//2), 1)
+        self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2))
+        self.fc3 = nn.Linear(int(hidden_size // 2), 1)
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
@@ -113,18 +104,17 @@ class Tabulartrain(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-        logging.info('Training completed for model (config space {}, init {}) in {} '
-                     'secs.'.format(config_space, round(time.time() -
-                                                        start_time, 2)))
+        logging.info(
+            f'Training completed for model (config space {config_space}, seed {seed}) ' +
+            f'in {round(time.time() - start_time, 2)}')
 
         model_save_path = os.path.join(
             save_path, f"config_space_{config_space}_init_{seed}_epoch_{num_epochs}.pt"
         )
         torch.save(self.model.state_dict(), model_save_path)
         logging.info(
-            'Saved model (arch {}, init {}) after epoch {} in {} '
-            'secs.'.format(config_space, seed, num_epochs, round(time.time()
-                                                                 - start_time, 2)))
+            f'Saved model (arch {config_space}, seed {seed}) ' +
+            f'after epoch {num_epochs} in {round(time.time() - start_time, 2)} secs.')
 
         return self.model
 
@@ -186,17 +176,6 @@ def run_train(seed):
 
     Args:
         seed                 (int): seed number
-        arch_id              (int): architecture id
-        arch                 (str): architecture genotype as string
-        num_epochs           (int): number of epochs to train
-        bslrn_batch_size     (int): mini-batch size
-        exp_name             (str): directory where to save results
-        logger    (logging.Logger): logger object
-        data_path            (str): directory where the dataset is stored
-        mode                 (str): train or validation
-        debug               (bool): train for a single mini-batch only
-        dataset              (str): dataset name
-        global_seed          (int): global seed for optimizer runs
 
     Returns:
         None
@@ -232,9 +211,9 @@ def run_train(seed):
         save_path='./saved_model',
     )
 
+
 # Get the outputs and print them
 
 
 if __name__ == '__main__':
-
     run_train(seed=1)
