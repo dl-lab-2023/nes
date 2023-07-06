@@ -168,8 +168,8 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
         seed=seed
     )
 
-    train_loader = DataLoader(dataset)
-    test_loader = DataLoader(dataset.test_tensors)
+    train_loader = DataLoader(dataset, batch_size=batch_size)
+    test_loader = DataLoader(dataset.test_tensors, batch_size=batch_size)
 
     return train_loader, test_loader, X_train.shape, y_train.shape
 
