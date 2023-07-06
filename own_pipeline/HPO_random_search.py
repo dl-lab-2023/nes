@@ -14,20 +14,21 @@ from autoPyTorch.datasets.resampling_strategy import HoldoutValTypes
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
-def seeds(seed: int):
+def set_seed_for_random_engines(seed: int):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
-    # see docs, set to false to disable NON-deterministic algorithms
+    # see docs, set false to disable NON-deterministic algorithms
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
 
 
-def configurations(seed: int) -> Configuration:
+def sample_random_hp_configuration(seed: int) -> Configuration:
     cs = ConfigurationSpace({
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "weight_decay": Float("weight_decay", bounds=(0.001, 0.1), log=True),
@@ -67,14 +68,13 @@ class Tabulartrain(nn.Module):
     def forward(self, x):
         self.model.forward(x)
 
-    def base_learner_train_save(self, seed, config_space, train_loader, test_loader,
-                                save_path, device):
+    def base_learner_train_save(self, seed: int, config: Configuration, train_loader: DataLoader,
+                                test_loader: DataLoader, save_path: str, device: torch.device):
+        learning_rate = config["learning_rate"]
+        optim = config["optimizer"]
+        wd = config["weight_decay"]
 
-        learning_rate = config_space["learning_rate"]
-        optim = config_space["optimizer"]
-        wd = config_space["weight_decay"]
-
-        num_epochs = config_space["num_epochs"]
+        num_epochs = config["num_epochs"]
 
         criterion = nn.BCEWithLogitsLoss()
 
@@ -91,9 +91,8 @@ class Tabulartrain(nn.Module):
         torch.manual_seed(0)
 
         # Train the model
-        for epoch in range(num_epochs):
+        for epoch in tqdm(range(num_epochs)):
             for i, (data, labels) in enumerate(train_loader):
-
                 data = data.to(device)
                 labels = labels.to(device)
                 labels = torch.unsqueeze(labels, 1)
@@ -109,15 +108,15 @@ class Tabulartrain(nn.Module):
                 optimizer.step()
 
         logging.info(
-            f'Training completed for model (config space {config_space}, seed {seed}) ' +
+            f'Training completed for model (config space {config}, seed {seed}) ' +
             f'in {round(time.time() - start_time, 2)}')
 
         model_save_path = os.path.join(
-            save_path, f"config_space_{config_space}_init_{seed}_epoch_{num_epochs}.pt"
+            save_path, f"config_space_{config}_init_{seed}_epoch_{num_epochs}.pt"
         )
         torch.save(self.model.state_dict(), model_save_path)
         logging.info(
-            f'Saved model (arch {config_space}, seed {seed}) ' +
+            f'Saved model (arch {config}, seed {seed}) ' +
             f'after epoch {num_epochs} in {round(time.time() - start_time, 2)} secs.')
 
         return self.model
@@ -152,15 +151,17 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
         # logger_port=self._logger_port,
     )
 
-    # Fit a input validator to check the provided data
+    # Fit input validator to check the provided data
     # Also, an encoder is fit to both train and test data,
     # to prevent unseen categories during inference
     input_validator.fit(X_train=X_train, y_train=y_train,
                         X_test=X_test, y_test=y_test)
 
     dataset = TabularDataset(
-        X=X_train, Y=y_train,
-        X_test=X_test, Y_test=y_test,
+        X=X_train,
+        Y=y_train,
+        X_test=X_test,
+        Y_test=y_test,
         validator=input_validator,
         resampling_strategy=HoldoutValTypes.holdout_validation,
         resampling_strategy_args=None,
@@ -183,21 +184,19 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed):
-    """Function that trains a given architecture.
+def run_train(seed: int):
+    """
+    Function that trains a given architecture and random hyperparameters.
 
-    Args:
-        seed                 (int): seed number
-
-    Returns:
-        None
+    :param seed: (int) seed number used to seed all randomness
+    :returns: None
     """
 
-    seeds(seed)
+    set_seed_for_random_engines(seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    config_space = configurations(seed)
+    config = sample_random_hp_configuration(seed)
 
     train_loader, test_loader, X_train_shape, y_train_shape = dataloader(
         seed, batch_size=16)
@@ -208,19 +207,16 @@ def run_train(seed):
     model = Tabulartrain(input_size, output_size)
     model.to(device)
 
-    logging.info(f" (configurations {config_space}, init: {seed})...")
+    logging.info(f" (configurations {config}, seed: {seed})...")
 
     model.base_learner_train_save(
         seed=seed,
-        config_space=config_space,
+        config=config,
         train_loader=train_loader,
         test_loader=test_loader,
         device=device,
         save_path='./saved_model',
     )
-
-
-# Get the outputs and print them
 
 
 if __name__ == '__main__':
