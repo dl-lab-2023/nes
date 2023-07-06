@@ -220,4 +220,6 @@ def run_train(seed: int):
 
 
 if __name__ == '__main__':
+    if not os.path.exists("./saved_model"):
+        os.mkdir("./saved_model")
     run_train(seed=1)
