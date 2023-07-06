@@ -46,7 +46,7 @@ class MLP(nn.Module):
         self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2), dtype=torch.float64)
         self.fc3 = nn.Linear(int(hidden_size // 2), output_size, dtype=torch.float64)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         x = self.fc3(x)
@@ -76,7 +76,7 @@ class Tabulartrain(nn.Module):
 
         num_epochs = config_space["num_epochs"]
 
-        criterion = nn.NLLLoss()
+        criterion = nn.BCEWithLogitsLoss()
 
         if optim == 'SGD':
             optimizer = torch.optim.SGD(
@@ -84,6 +84,8 @@ class Tabulartrain(nn.Module):
         elif optim == 'Adam':
             optimizer = torch.optim.Adam(
                 self.model.parameters(), lr=learning_rate, weight_decay=wd)
+        else:
+            raise NotImplementedError()
 
         start_time = time.time()
         torch.manual_seed(0)
