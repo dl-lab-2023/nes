@@ -96,6 +96,7 @@ class Tabulartrain(nn.Module):
 
                 data = data.to(device)
                 labels = labels.to(device)
+                labels = torch.unsqueeze(labels, 1)
 
                 outputs = self.model(data)
                 loss = criterion(outputs, labels)
