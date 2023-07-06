@@ -184,7 +184,7 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed: int):
+def run_train(seed: int, save_path: str):
     """
     Function that trains a given architecture and random hyperparameters.
 
@@ -215,11 +215,12 @@ def run_train(seed: int):
         train_loader=train_loader,
         test_loader=test_loader,
         device=device,
-        save_path='./saved_model',
+        save_path=save_path,
     )
 
 
 if __name__ == '__main__':
-    if not os.path.exists("./saved_model"):
-        os.mkdir("./saved_model")
-    run_train(seed=1)
+    save_path = "./saved_model"
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+    run_train(seed=1, save_path=save_path)
