@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import time
+from typing import Tuple
 
 import numpy as np
 import openml
@@ -38,12 +39,12 @@ def configurations(seed: int) -> Configuration:
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size: int, hidden_size: int, output_size: int):
         super(MLP, self).__init__()
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float64)
         self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2), dtype=torch.float64)
-        self.fc3 = nn.Linear(int(hidden_size // 2), 1, dtype=torch.float64)
+        self.fc3 = nn.Linear(int(hidden_size // 2), output_size, dtype=torch.float64)
 
     def forward(self, x: torch.Tensor):
         x = self.relu(self.fc1(x))
@@ -53,10 +54,10 @@ class MLP(nn.Module):
 
 
 class Tabulartrain(nn.Module):
-    def __init__(self, input_size) -> None:
+    def __init__(self, input_size: int, output_size: int) -> None:
         super(Tabulartrain, self).__init__()
         hidden_size = self._get_hidden_size(input_size)
-        self.model = MLP(input_size, hidden_size)
+        self.model = MLP(input_size, hidden_size, output_size)
 
     def _get_hidden_size(self, input_size):
         # Adjust the factor based on your preference
@@ -170,6 +171,14 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
     return train_loader, test_loader, X_train.shape, y_train.shape
 
 
+def get_layer_shape(shape: Tuple):
+    if len(shape) == 1:
+        return 1
+    if len(shape) == 2:
+        return shape[1]
+    raise NotImplementedError()
+
+
 # Define the train function to train
 def run_train(seed):
     """Function that trains a given architecture.
@@ -190,14 +199,10 @@ def run_train(seed):
     train_loader, test_loader, X_train_shape, y_train_shape = dataloader(
         seed, batch_size=16)
 
-    if len(y_train_shape) == 1:
-        model_out_shape = 1
-    elif len(y_train_shape) == 2:
-        model_out_shape = y_train_shape[1]
-    else:
-        raise NotImplementedError()
+    input_size = get_layer_shape(X_train_shape)
+    output_size = get_layer_shape(y_train_shape)
 
-    model = Tabulartrain(model_out_shape)
+    model = Tabulartrain(input_size, output_size)
     model.to(device)
 
     logging.info(f" (configurations {config_space}, init: {seed})...")
