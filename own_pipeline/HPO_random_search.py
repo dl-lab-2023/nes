@@ -98,6 +98,8 @@ class Tabulartrain(nn.Module):
         else:
             raise NotImplementedError()
 
+        logging.info(f"Starting training with {config=}, {seed=}")
+
         start_time = time.time()
         self.model.train()
         # Train the model
@@ -118,9 +120,9 @@ class Tabulartrain(nn.Module):
                 optimizer.step()
 
         logging.info(
-            f'Training completed for model (config space {config}, seed {seed}) ' +
-            f'in {round(time.time() - start_time, 2)}')
+            f'Training finished in {round(time.time() - start_time, 2)}')
 
+        logging.info("Starting final evaluation...")
         self.model.eval()
         total_loss = 0.0
         for epoch in tqdm(range(num_epochs)):
@@ -134,16 +136,13 @@ class Tabulartrain(nn.Module):
                 total_loss += loss
 
         logging.info(
-            f'Evaluation completed for model (config space {config}, seed {seed}) ' +
-            f'in {round(time.time() - start_time, 2)}')
+            f'Final evaluation completed in {round(time.time() - start_time, 2)}. {total_loss=}')
 
         model_save_path = os.path.join(
-            save_path, f"seed_{seed}_loss_{total_loss}_config_{config}.pt"
+            save_path, f"seed_{seed}.pt"
         )
         torch.save(self.model.state_dict(), model_save_path)
-        logging.info(
-            f'Saved model (arch {config}, seed {seed}) ' +
-            f'after epoch {num_epochs} in {round(time.time() - start_time, 2)} secs.')
+        logging.info("Saved model. Done.")
 
         return self.model
 
@@ -258,5 +257,3 @@ if __name__ == '__main__':
         os.mkdir(save_path)
 
     run_train(args.seed, save_path=save_path)
-
-    logging.info("Done")
