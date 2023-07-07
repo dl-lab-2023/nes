@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import time
+import json
 from typing import Tuple
 
 import numpy as np
@@ -136,13 +137,20 @@ class Tabulartrain(nn.Module):
                 total_loss += loss
 
         logging.info(
-            f'Final evaluation completed in {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
+            f'Final evaluation completed at {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
 
-        model_save_path = os.path.join(
-            save_path, f"seed_{seed}.pt"
-        )
+        model_save_path = os.path.join(save_path, f"seed_{seed}.pt")
         torch.save(self.model.state_dict(), model_save_path)
-        logging.info("Saved model. Done.")
+
+        info_save_path = os.path.join(save_path, f"seed_{seed}.json")
+        with open(info_save_path, 'w') as f:
+            json.dump({
+                "seed": seed,
+                "total_loss": total_loss.item(),
+                "total_duration": time.time() - start_time
+            }, f, sort_keys=True, indent=4)
+
+        logging.info("Saved model and info. Done.")
 
         return self.model
 
