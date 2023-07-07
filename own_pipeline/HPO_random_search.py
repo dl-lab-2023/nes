@@ -120,7 +120,7 @@ class Tabulartrain(nn.Module):
                 optimizer.step()
 
         logging.info(
-            f'Training finished in {round(time.time() - start_time, 2)}')
+            f'Training finished in {round(time.time() - start_time, 2)} sec')
 
         logging.info("Starting final evaluation...")
         self.model.eval()
@@ -136,7 +136,7 @@ class Tabulartrain(nn.Module):
                 total_loss += loss
 
         logging.info(
-            f'Final evaluation completed in {round(time.time() - start_time, 2)}. {total_loss=}')
+            f'Final evaluation completed in {round(time.time() - start_time, 2)}. {total_loss=} sec')
 
         model_save_path = os.path.join(
             save_path, f"seed_{seed}.pt"
