@@ -18,15 +18,18 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 
-def set_seed_for_random_engines(seed: int):
+def set_seed_for_random_engines(seed: int, device):
     random.seed(seed)
     np.random.seed(seed)
+
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    # see docs, set false to disable NON-deterministic algorithms
-    torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True)
+
+    if device != "cpu":
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        # see docs, set false to disable NON-deterministic algorithms
+        torch.backends.cudnn.benchmark = False
 
 
 def sample_random_hp_configuration(seed: int) -> Configuration:
@@ -208,9 +211,9 @@ def run_train(seed: int, save_path: str):
     :returns: None
     """
 
-    set_seed_for_random_engines(seed)
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    set_seed_for_random_engines(seed, device)
 
     config = sample_random_hp_configuration(seed)
 
@@ -245,3 +248,5 @@ if __name__ == '__main__':
         os.mkdir(save_path)
 
     run_train(args.seed, save_path=save_path)
+
+    print("Done")
