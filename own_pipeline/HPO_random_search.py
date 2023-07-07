@@ -17,6 +17,11 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
+
 
 def set_seed_for_random_engines(seed: int, device):
     random.seed(seed)
@@ -48,8 +53,10 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float64)
-        self.fc2 = nn.Linear(hidden_size, int(hidden_size // 2), dtype=torch.float64)
-        self.fc3 = nn.Linear(int(hidden_size // 2), output_size, dtype=torch.float64)
+        self.fc2 = nn.Linear(hidden_size, int(
+            hidden_size // 2), dtype=torch.float64)
+        self.fc3 = nn.Linear(int(hidden_size // 2),
+                             output_size, dtype=torch.float64)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.fc1(x))
@@ -188,8 +195,10 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
         seed=seed
     )
 
-    train_loader = DataLoader(dataset.get_dataset(split_id=0, train=True), batch_size=batch_size)
-    test_loader = DataLoader(dataset.get_dataset(split_id=0, train=False), batch_size=batch_size)
+    train_loader = DataLoader(dataset.get_dataset(
+        split_id=0, train=True), batch_size=batch_size)
+    test_loader = DataLoader(dataset.get_dataset(
+        split_id=0, train=False), batch_size=batch_size)
 
     return train_loader, test_loader, X_train.shape, y_train.shape
 
@@ -212,7 +221,7 @@ def run_train(seed: int, save_path: str):
     """
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     set_seed_for_random_engines(seed, device)
 
     config = sample_random_hp_configuration(seed)
@@ -240,7 +249,8 @@ def run_train(seed: int, save_path: str):
 
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser()
-    argParser.add_argument("--seed", type=int, required=True, help="Random generator seed")
+    argParser.add_argument(
+        "--seed", type=int, required=True, help="Random generator seed")
     args = argParser.parse_args()
 
     save_path = "./saved_model"
@@ -249,4 +259,4 @@ if __name__ == '__main__':
 
     run_train(args.seed, save_path=save_path)
 
-    print("Done")
+    logging.info("Done")
