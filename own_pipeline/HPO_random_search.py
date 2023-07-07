@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from pathlib import Path
 import random
 import time
 import json
@@ -139,18 +140,28 @@ class Tabulartrain(nn.Module):
         logging.info(
             f'Final evaluation completed at {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
 
-        model_save_path = os.path.join(save_path, f"seed_{seed}.pt")
-        torch.save(self.model.state_dict(), model_save_path)
+        model_save_dir = os.path.join(save_path, f"seed_{seed}")
+        Path(model_save_dir).mkdir(exist_ok=True)
 
-        info_save_path = os.path.join(save_path, f"seed_{seed}.json")
-        with open(info_save_path, 'w') as f:
+        torch.save(self.model.state_dict(), os.path.join(model_save_dir, "model_id.pt"))
+
+        torch.save(self.model, os.path.join(model_save_dir, "nn_module.pt"))
+
+        # TODO replace self.preds and self.evals
+        # Look at nes/ensemble_selection/containers.py -> Baselearner class -> save()
+        torch.save(
+            {"preds": self.preds, "evals": self.evals},
+            os.path.join(model_save_dir, "preds_evals.pt"),
+        )
+
+        with open(os.path.join(model_save_dir, f"train_performance.json"), 'w') as f:
             json.dump({
                 "seed": seed,
                 "total_loss": total_loss.item(),
                 "total_duration": time.time() - start_time
             }, f, sort_keys=True, indent=4)
 
-        logging.info("Saved model and info. Done.")
+        logging.info("Saved baselearner. Done.")
 
         return self.model
 
@@ -261,7 +272,6 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     save_path = "./saved_model"
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
+    Path(save_path).mkdir(exist_ok=True)
 
     run_train(args.seed, save_path=save_path)
