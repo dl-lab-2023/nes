@@ -136,7 +136,7 @@ class Tabulartrain(nn.Module):
                 total_loss += loss
 
         logging.info(
-            f'Final evaluation completed in {round(time.time() - start_time, 2)}. {total_loss=} sec')
+            f'Final evaluation completed in {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
 
         model_save_path = os.path.join(
             save_path, f"seed_{seed}.pt"
