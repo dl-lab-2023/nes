@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import random
@@ -235,7 +236,12 @@ def run_train(seed: int, save_path: str):
 
 
 if __name__ == '__main__':
+    argParser = argparse.ArgumentParser()
+    argParser.add_argument("--seed", type=int, required=True, help="Random generator seed")
+    args = argParser.parse_args()
+
     save_path = "./saved_model"
     if not os.path.exists(save_path):
         os.mkdir(save_path)
-    run_train(seed=1, save_path=save_path)
+
+    run_train(args.seed, save_path=save_path)
