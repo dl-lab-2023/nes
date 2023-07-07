@@ -88,8 +88,7 @@ class Tabulartrain(nn.Module):
             raise NotImplementedError()
 
         start_time = time.time()
-        torch.manual_seed(0)
-
+        self.model.train()
         # Train the model
         for epoch in tqdm(range(num_epochs)):
             for i, (data, labels) in enumerate(train_loader):
@@ -111,8 +110,24 @@ class Tabulartrain(nn.Module):
             f'Training completed for model (config space {config}, seed {seed}) ' +
             f'in {round(time.time() - start_time, 2)}')
 
+        self.model.eval()
+        total_loss = 0.0
+        for epoch in tqdm(range(num_epochs)):
+            for i, (data, labels) in enumerate(test_loader):
+                data = data.to(device)
+                labels = labels.to(device)
+                labels = torch.unsqueeze(labels, 1)
+
+                outputs = self.model(data)
+                loss = criterion(outputs, labels)
+                total_loss += loss
+
+        logging.info(
+            f'Evaluation completed for model (config space {config}, seed {seed}) ' +
+            f'in {round(time.time() - start_time, 2)}')
+
         model_save_path = os.path.join(
-            save_path, f"config_space_{config}_init_{seed}_epoch_{num_epochs}.pt"
+            save_path, f"seed_{seed}_loss_{total_loss}_config_{config}.pt"
         )
         torch.save(self.model.state_dict(), model_save_path)
         logging.info(
@@ -169,8 +184,8 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
         seed=seed
     )
 
-    train_loader = DataLoader(dataset, batch_size=batch_size)
-    test_loader = DataLoader(dataset.test_tensors, batch_size=batch_size)
+    train_loader = DataLoader(dataset.get_dataset(split_id=0, train=True), batch_size=batch_size)
+    test_loader = DataLoader(dataset.get_dataset(split_id=0, train=False), batch_size=batch_size)
 
     return train_loader, test_loader, X_train.shape, y_train.shape
 
