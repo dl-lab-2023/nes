@@ -128,27 +128,13 @@ class Tabulartrain(nn.Module):
         logging.info(
             f'Training finished in {round(time.time() - start_time, 2)} sec')
 
-        logging.info("Starting final evaluation...")
-        self.model.eval()
-        total_loss = 0.0
-        for epoch in tqdm(range(num_epochs)):
-            for i, (data, labels) in enumerate(test_loader):
-                data = data.to(device)
-                labels = labels.to(device)
-                labels = torch.unsqueeze(labels, 1)
-
-                outputs = self.model(data)
-                loss = criterion(outputs, labels)
-                total_loss += loss
-
-        logging.info(
-            f'Final evaluation completed at {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
-
         # save model
         model_save_dir = os.path.join(save_path, f"seed_{seed}")
         Path(model_save_dir).mkdir(exist_ok=True)
+
         torch.save(self.model.state_dict(), os.path.join(model_save_dir, "model_id.pt"))
         torch.save(self.model, os.path.join(model_save_dir, "nn_module.pt"))
+
         preds = make_predictions(self.model, test_loader, device, num_classes)
         evaluation = evaluate_predictions(preds)
         evaluation = {
@@ -161,12 +147,11 @@ class Tabulartrain(nn.Module):
             {"preds": preds, "evals": evaluation},
             os.path.join(model_save_dir, "preds_evals.pt"),
         )
-
         with open(os.path.join(model_save_dir, f"train_performance.json"), 'w') as f:
             json.dump({
                 "seed": seed,
-                "total_loss": total_loss.item(),
-                "total_duration": time.time() - start_time
+                "total_duration": time.time() - start_time,
+                "evaluation": evaluation
             }, f, sort_keys=True, indent=4)
 
         logging.info("Saved baselearner. Done.")
