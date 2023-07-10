@@ -278,7 +278,7 @@ def run_train(seed: int, save_path: str):
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser()
     argParser.add_argument(
-        "--seed", type=int, required=True, help="Random generator seed")
+        "--seed", type=int, default=1, help="Random generator seed")
     args = argParser.parse_args()
 
     save_path = "./saved_model"
