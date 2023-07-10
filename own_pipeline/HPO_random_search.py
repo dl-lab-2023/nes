@@ -15,9 +15,13 @@ from ConfigSpace import ConfigurationSpace, Float, Configuration
 from autoPyTorch.data.tabular_validator import TabularInputValidator
 from autoPyTorch.datasets.resampling_strategy import HoldoutValTypes
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from openml import OpenMLTask
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+from nes.ensemble_selection.containers import METRICS
+from nes.ensemble_selection.utils import make_predictions, evaluate_predictions
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -82,7 +86,7 @@ class Tabulartrain(nn.Module):
         self.model.forward(x)
 
     def base_learner_train_save(self, seed: int, config: Configuration, train_loader: DataLoader,
-                                test_loader: DataLoader, save_path: str, device: torch.device):
+                                test_loader: DataLoader, save_path: str, device: torch.device, num_classes: int):
         learning_rate = config["learning_rate"]
         optim = config["optimizer"]
         wd = config["weight_decay"]
@@ -140,17 +144,21 @@ class Tabulartrain(nn.Module):
         logging.info(
             f'Final evaluation completed at {round(time.time() - start_time, 2)} sec, total loss: {total_loss.item()}')
 
+        # save model
         model_save_dir = os.path.join(save_path, f"seed_{seed}")
         Path(model_save_dir).mkdir(exist_ok=True)
-
         torch.save(self.model.state_dict(), os.path.join(model_save_dir, "model_id.pt"))
-
         torch.save(self.model, os.path.join(model_save_dir, "nn_module.pt"))
-
-        # TODO replace self.preds and self.evals
-        # Look at nes/ensemble_selection/containers.py -> Baselearner class -> save()
+        preds = make_predictions(self.model, test_loader, device, num_classes)
+        evaluation = evaluate_predictions(preds)
+        evaluation = {
+            METRICS.loss: evaluation["loss"],
+            METRICS.accuracy: evaluation["acc"],
+            METRICS.error: 1 - evaluation["acc"],
+            METRICS.ece: evaluation["ece"],
+        }
         torch.save(
-            {"preds": self.preds, "evals": self.evals},
+            {"preds": preds, "evals": evaluation},
             os.path.join(model_save_dir, "preds_evals.pt"),
         )
 
@@ -169,7 +177,8 @@ class Tabulartrain(nn.Module):
 # Defining the dataset
 
 def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
-    task = openml.tasks.get_task(task_id=task_id)
+    task: OpenMLTask = openml.tasks.get_task(task_id=task_id)
+    num_classes = len(getattr(task, "class_labels"))
     dataset = task.get_dataset()
     X, y, categorical_indicator, _ = dataset.get_data(
         dataset_format='dataframe',
@@ -218,7 +227,7 @@ def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
     test_loader = DataLoader(dataset.get_dataset(
         split_id=0, train=False), batch_size=batch_size)
 
-    return train_loader, test_loader, X_train.shape, y_train.shape
+    return train_loader, test_loader, X_train.shape, y_train.shape, num_classes
 
 
 def get_layer_shape(shape: Tuple):
@@ -244,7 +253,7 @@ def run_train(seed: int, save_path: str):
 
     config = sample_random_hp_configuration(seed)
 
-    train_loader, test_loader, X_train_shape, y_train_shape = dataloader(
+    train_loader, test_loader, X_train_shape, y_train_shape, num_classes = dataloader(
         seed, batch_size=16)
 
     input_size = get_layer_shape(X_train_shape)
@@ -262,6 +271,7 @@ def run_train(seed: int, save_path: str):
         test_loader=test_loader,
         device=device,
         save_path=save_path,
+        num_classes=num_classes
     )
 
 
