@@ -15,7 +15,7 @@ echo "Started at $(date)"
 echo "MOAB_JOBARRAYINDEX (this job id): $MOAB_JOBARRAYINDEX"
 echo "MOAB_JOBARRAYRANGE (num total jobs of this task): $MOAB_JOBARRAYRANGE"
 
-cd $(ws_find $MOAB_WORKSPACE_NAME)
+cd $(ws_find $MOAB_WORKSPACE_NAME)/nes
 echo "PWD: $PWD"
 
 eval "$($CONDA_BIN shell.bash hook)"
