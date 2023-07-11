@@ -143,10 +143,10 @@ def main():
                                                                        pool_name, args.M,
                                                                        args.esa, device)
         )
-        print(id_set)
+        print(f"Selected model IDs for ensemble: {id_set}")
 
     torch.save(id_set, os.path.join(
-        ENSEMBLE_SAVE_DIR, 'ids_{}.pt'.format(args.M)))
+        ENSEMBLE_SAVE_DIR, 'ensemble_{}_baselearners.pt'.format(args.M)))
 
     if args.esa == "beam_search_with_div":
         args.esa = args.esa + f"_{args.diversity_strength}"
