@@ -1,30 +1,48 @@
 import os
 import dill as pickle
 import torch
-import time
 import argparse
 from collections import defaultdict
 from pathlib import Path
 
 from nes.ensemble_selection.utils import (
-    model_seeds,
     args_to_device,
-    POOLS,
-    SCHEMES,
 )
-from nes.ensemble_selection.config import BUDGET, PLOT_EVERY
-from nes.ensemble_selection.containers import Ensemble, Baselearner
-from nes.ensemble_selection.esas import registry as esas_registry, run_esa
+# from nes.ensemble_selection.config import BUDGET, PLOT_EVERY
+from nes.ensemble_selection.esas import registry as esas_registry
+from own_pipeline.baselearner import load_baselearner, model_seeds
 
 
-def load_baselearner(model_id, load_nn_module, baselearner_dir):
-    dir = os.path.join(
-        baselearner_dir,
-        f"seed_{model_id}",
-    )
-    to_return = Baselearner.load(dir, load_nn_module)
-    # assert to_return.model_id == model_id
-    return to_return
+def run_esa(M, population, esa, val_severity, validation_size=-1, diversity_strength=None):
+    model_ids_pool = list(population.keys())
+    models_preds_pool = {
+        x: population[x].preds for x in model_ids_pool
+    }
+
+    if validation_size > -1:
+        assert validation_size > 0, "Validation size cannot be 0."
+        _models_preds_pool = {}
+        for x, tensor_data in models_preds_pool.items():
+            preds, labels = tensor_data.tensors
+            assert (validation_size <= len(preds)), "Validation size too large."
+
+            _tensor_data = torch.utils.data.TensorDataset(preds[:validation_size],
+                                                          labels[:validation_size])
+            _models_preds_pool[x] = _tensor_data
+        models_preds_pool = _models_preds_pool
+
+    if diversity_strength is not None:
+        esa_out = esa(models_preds_pool, 'loss', M, div_strength=diversity_strength)
+    else:
+        esa_out = esa(models_preds_pool, 'loss', M)
+    return esa_out
+    # if 'weights' in esa_out.keys():
+    #     model_ids_to_ensemble = esa_out['models_chosen']
+    #     weights = esa_out['weights']
+    #     return {'models_chosen':}
+    # else:
+    #     model_ids_to_ensemble = esa_out['models_chosen']
+    #     return model_ids_to_ensemble
 
 
 def main():
@@ -48,31 +66,35 @@ def main():
         default=1.0,
     )
 
+    parser.add_argument(
+        "--max_seed",
+        type=int,
+        required=True
+    )
+
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(device)
+    if device == "cuda":
+        torch.cuda.set_device(device)
 
     ENSEMBLE_SAVE_DIR = "saved_ensembles"
     Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True)
 
     # ===============================
+    pool_name = "own_rs"
+    SCHEMES = [pool_name]
 
-    if args.pool_name == "nes_rs_esa":
-        POOLS.update(
-            {
-                scheme: [model_seeds(arch=args.arch_id, init=seed, scheme=scheme)
-                         for seed in range(BUDGET)]
-                for scheme in SCHEMES
-                if scheme == "nes_rs_esa"
-            }
-        )
+    POOLS = {
+        scheme: [model_seeds(arch=seed, init=seed, scheme=scheme) for seed in range(args.max_seed)]
+        for scheme in SCHEMES
+    }
 
     # ===============================
 
     BASELEARNER_DIR = "saved_model"
 
-    pool_keys = POOLS[args.pool_name]
+    pool_keys = POOLS[pool_name]
 
     pool = {
         k: load_baselearner(
@@ -84,17 +106,14 @@ def main():
     }
     print("Loaded baselearners")
 
-    for model in pool.values():  # move everything to right device
-        model.partially_to_device(
-            data_type='val', device=args_to_device(args.device))
+    for baselearner in pool.values():  # move everything to right device
+        baselearner.partially_to_device(device=args_to_device(device if str(device) != "cpu" else -1))
         # model.to_device(args_to_device(args.device))
 
-    pools, num_arch_samples = get_pools_and_num_arch_samples(
-        args.pool_name).values()
+    pools, num_arch_samples = get_pools_and_num_arch_samples(POOLS, pool_name, args.max_seed).values()
 
     esa = esas_registry[args.esa]
-    severities = range(6) if (
-        args.dataset in ["cifar10", "cifar100", "tiny"]) else range(1)
+    severities = range(1)  # In case of our dataset
 
     result = defaultdict(list)
     result_weights = defaultdict(list)
@@ -121,8 +140,8 @@ def main():
 
         print(
             "Done {}/{} for {}, M = {}, esa = {}, device = {}.".format(i+1, len(pools),
-                                                                       args.pool_name, args.M,
-                                                                       args.esa, args.device)
+                                                                       pool_name, args.M,
+                                                                       args.esa, device)
         )
         print(id_set)
 
@@ -140,9 +159,9 @@ def main():
                    "num_arch_samples": num_arch_samples}
 
     if args.validation_size > -1:
-        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{args.pool_name}_valsize_{args.validation_size}.pickle"
+        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{pool_name}_valsize_{args.validation_size}.pickle"
     else:
-        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{args.pool_name}.pickle"
+        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{pool_name}.pickle"
 
     with open(
         os.path.join(
@@ -156,17 +175,11 @@ def main():
     print("Ensemble selection completed.")
 
 
-def get_pools_and_num_arch_samples(pool):
-    pool_keys = POOLS[pool]
-    if args.pool_name not in ["deepens_darts", "deepens_amoeba"]:
-        assert len(pool_keys) == BUDGET
+def get_pools_and_num_arch_samples(POOLS, pool_name, max_seed):
+    pool_keys = POOLS[pool_name]
 
-        num_arch_samples = range(PLOT_EVERY, BUDGET + 1, PLOT_EVERY)
-        pool_at_samples = [pool_keys[:num_samples]
-                           for num_samples in num_arch_samples]
-    else:
-        num_arch_samples = range(1)
-        pool_at_samples = [pool_keys]
+    num_arch_samples = range(1)
+    pool_at_samples = [pool_keys]
 
     return {"pools_at_samples": pool_at_samples, "num_arch_samples": num_arch_samples}
 

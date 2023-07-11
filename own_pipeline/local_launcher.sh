@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-max_seed=25
+max_seed=10
 
 for ((i=0; i<=max_seed; i++)); do
-   python own_pipeline/HPO_random_search.py --seed $i
+   python -m own_pipeline.HPO_random_search --seed $i
 done

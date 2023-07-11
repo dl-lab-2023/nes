@@ -22,6 +22,8 @@ from tqdm import tqdm
 
 from nes.ensemble_selection.containers import METRICS
 from nes.ensemble_selection.utils import make_predictions, evaluate_predictions
+from own_pipeline.baselearner import model_seeds
+
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -132,7 +134,8 @@ class Tabulartrain(nn.Module):
         model_save_dir = os.path.join(save_path, f"seed_{seed}")
         Path(model_save_dir).mkdir(exist_ok=True)
 
-        torch.save(self.model.state_dict(), os.path.join(model_save_dir, "model_id.pt"))
+        model_id = model_seeds(arch=seed, init=seed, scheme="own_rs")._asdict()
+        torch.save(model_id, os.path.join(model_save_dir, "model_id.pt"))
         torch.save(self.model, os.path.join(model_save_dir, "nn_module.pt"))
 
         preds = make_predictions(self.model, test_loader, device, num_classes)
@@ -147,11 +150,17 @@ class Tabulartrain(nn.Module):
             {"preds": preds, "evals": evaluation},
             os.path.join(model_save_dir, "preds_evals.pt"),
         )
+
+        hps = {}
+        for key, value in config.items():
+            hps[key] = value
+
         with open(os.path.join(model_save_dir, f"train_performance.json"), 'w') as f:
             json.dump({
                 "seed": seed,
                 "total_duration": time.time() - start_time,
-                "evaluation": evaluation
+                "evaluation": evaluation,
+                "hyperparams": hps
             }, f, sort_keys=True, indent=4)
 
         logging.info("Saved baselearner. Done.")

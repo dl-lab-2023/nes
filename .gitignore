@@ -1,6 +1,8 @@
 autoPyTorch
 saved_model
 
+*.pt
+
 # Byte-compiled / optimized / DLL files
 .idea
 .vscode
