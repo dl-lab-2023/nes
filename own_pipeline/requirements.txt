@@ -10,5 +10,5 @@ openml==0.13.1
 pyyaml==6.0
 autoPyTorch==0.2.1 # autopytorch requires swig (apt-get install swig) https://github.com/automl/auto-sklearn/issues/314
 tqdm==2.2.3
-wand
-dill
+wand==0.6.11
+dill==0.3.6
