@@ -13,9 +13,11 @@ import torch
 from own_pipeline.containers.ensemble import Ensemble
 from nes.ensemble_selection.utils import args_to_device
 from own_pipeline.containers.baselearner import load_baselearner, Baselearner, model_seeds
+from own_pipeline.util import enable_logging
 
 
 def parse_arguments() -> Namespace:
+    logging.info("parsing arguments...")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--device",
@@ -51,6 +53,7 @@ def parse_arguments() -> Namespace:
 
 
 def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
+    logging.info("loading baselearners...")
     id_set: set[int] = torch.load(f"{args.ensemble_dir}/{args.ensemble_name}.pt")
     POOL_NAME = "own_rs"
 
@@ -70,10 +73,13 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
 
 
 def load_ensemble(args: Namespace, baselearners: List[Baselearner]) -> Ensemble:
+    logging.info("loading ensemble...")
     return Ensemble(baselearners, bsl_weights=None)  # TODO bsl_weights?
 
 
 def evaluate_ensemble(ensemble: Ensemble):
+    logging.info("evaluating ensemble...")
+
     ensemble.compute_preds()
     ensemble.compute_evals()
     ensemble.preds = None  # clear memory
@@ -87,8 +93,12 @@ def evaluate_ensemble(ensemble: Ensemble):
     # ensemble.compute_disagreement()
     torch.cuda.empty_cache()
 
+    logging.info(f"avg_baselearner_evals: {dict(ensemble.avg_baselearner_evals)}")
+    logging.info(f"evals: {dict(ensemble.evals)}")
+
 
 def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
+    logging.info("saving...")
     Path(args.ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
     with open(os.path.join(args.ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
         json.dump({
@@ -99,17 +109,13 @@ def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
 
 
 def main():
-    logging.info("parsing arguments...")
     args = parse_arguments()
-    logging.info("loading baselearners...")
     ids, baselearners = load_baselearners(args)
-    logging.info("loading ensemble...")
     ensemble = load_ensemble(args, baselearners)
-    logging.info("evaluating...")
     evaluate_ensemble(ensemble)
-    logging.info("saving...")
     save_data(args, ensemble, ids)
 
 
 if __name__ == '__main__':
+    enable_logging()
     main()

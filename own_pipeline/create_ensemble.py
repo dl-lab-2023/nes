@@ -1,3 +1,4 @@
+import logging
 import os
 import dill as pickle
 import torch
@@ -10,6 +11,7 @@ from nes.ensemble_selection.utils import (
 )
 from nes.ensemble_selection.esas import registry as esas_registry
 from own_pipeline.containers.baselearner import load_baselearner, model_seeds
+from own_pipeline.util import enable_logging
 
 
 def run_esa(M, population, esa, val_severity, validation_size=-1, diversity_strength=None):
@@ -103,7 +105,7 @@ def main():
         )
         for k in pool_keys
     }
-    print("Loaded baselearners")
+    logging.info("Loaded baselearners")
 
     for baselearner in pool.values():  # move everything to right device
         baselearner.partially_to_device(device=args_to_device(device if str(device) != "cpu" else -1))
@@ -121,12 +123,13 @@ def main():
 
     for i, pool_ids in enumerate(pools):
         for severity in severities:
-            print("Severity: {}".format(severity))
+            logging.info("Severity: {}".format(severity))
             population = {k: pool[k] for k in pool_ids}
 
             ens_chosen = run_esa(
                 M=args.M, population=population, esa=esa, val_severity=severity,
-                validation_size=args.validation_size, diversity_strength=None if args.esa != "beam_search_with_div" else args.diversity_strength
+                validation_size=args.validation_size,
+                diversity_strength=None if args.esa != "beam_search_with_div" else args.diversity_strength
             )
             # print(ens_chosen)
             if (severity == 0) and (i == len(pools) - 1):
@@ -137,15 +140,10 @@ def main():
             if "weights" in ens_chosen.keys():
                 result_weights[str(severity)].append(ens_chosen['weights'])
 
-        print(
-            "Done {}/{} for {}, M = {}, esa = {}, device = {}.".format(i+1, len(pools),
-                                                                       pool_name, args.M,
-                                                                       args.esa, device)
-        )
-        print(f"Selected model IDs for ensemble: {id_set}")
+        logging.info(f"Done {i + 1}/{len(pools)} for '{pool_name}', M={args.M}, esa={args.esa}, device={device}.")
+        logging.info(f"Selected model IDs for ensemble: {id_set}")
 
-    torch.save(id_set, os.path.join(
-        ENSEMBLE_SAVE_DIR, 'ensemble_{}_baselearners.pt'.format(args.M)))
+    torch.save(id_set, os.path.join(ENSEMBLE_SAVE_DIR, f'ensemble_{args.M}_baselearners.pt'))
 
     if args.esa == "beam_search_with_div":
         args.esa = args.esa + f"_{args.diversity_strength}"
@@ -163,15 +161,15 @@ def main():
         save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{pool_name}.pickle"
 
     with open(
-        os.path.join(
-            ENSEMBLE_SAVE_DIR,
-            save_name
-        ),
-        "wb",
+            os.path.join(
+                ENSEMBLE_SAVE_DIR,
+                save_name
+            ),
+            "wb",
     ) as f:
         pickle.dump(to_dump, f)
 
-    print("Ensemble selection completed.")
+    logging.info("Ensemble selection completed.")
 
 
 def get_pools_and_num_arch_samples(POOLS, pool_name, max_seed):
@@ -184,4 +182,5 @@ def get_pools_and_num_arch_samples(POOLS, pool_name, max_seed):
 
 
 if __name__ == '__main__':
+    enable_logging()
     main()

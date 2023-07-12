@@ -23,11 +23,7 @@ from tqdm import tqdm
 from nes.ensemble_selection.containers import METRICS
 from nes.ensemble_selection.utils import make_predictions, evaluate_predictions
 from own_pipeline.containers.baselearner import model_seeds
-
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
+from own_pipeline.util import enable_logging
 
 
 def set_seed_for_random_engines(seed: int, device):
@@ -269,6 +265,7 @@ def run_train(seed: int, save_path: str):
 
 
 if __name__ == '__main__':
+    enable_logging()
     argParser = argparse.ArgumentParser()
     argParser.add_argument(
         "--seed", type=int, default=1, help="Random generator seed")
