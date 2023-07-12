@@ -22,8 +22,8 @@ def parse_arguments() -> Namespace:
     parser.add_argument(
         "--device",
         type=int,
-        default=-1,
-        help="Index of GPU device to use. For CPU, set to -1. Default: -1.",
+        default=0,
+        help="Index of GPU device to use. For CPU, set to -1. Default: 0.",
     )
     parser.add_argument(
         "--baselearner_dir",
