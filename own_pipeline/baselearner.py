@@ -21,7 +21,7 @@ class Baselearner:
     _cpu_device = torch.device("cpu")
 
     def __init__(
-        self, model_id, severities, device=None, nn_module=None, preds=None, evals=None,
+            self, model_id, severities, device=None, nn_module=None, preds=None, evals=None,
     ):
         self.model_id = model_id
         self.device = device
@@ -39,11 +39,9 @@ class Baselearner:
             self.nn_module.to(device)
 
         if self.preds is not None:
-            for key, dct in self.preds.items():
-                for k, tsr_dst in dct.items():
-                    dct[k] = TensorDataset(
-                        tsr_dst.tensors[0].to(device), tsr_dst.tensors[1].to(device)
-                    )
+            self.preds = TensorDataset(
+                self.preds.tensors[0].to(device), self.preds.tensors[1].to(device)
+            )
 
         self.device = device
 
@@ -171,7 +169,7 @@ class Baselearner:
         return obj
 
 
-def load_baselearner(model_id, load_nn_module, baselearner_dir):
+def load_baselearner(model_id, load_nn_module, baselearner_dir) -> Baselearner:
     dir = os.path.join(
         baselearner_dir,
         f"seed_{model_id[0]}",
