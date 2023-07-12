@@ -99,10 +99,15 @@ def save_data(args: Namespace, ensemble: Ensemble):
 
 
 def main():
+    logging.info("parsing arguments...")
     args = parse_arguments()
+    logging.info("loading baselearners...")
     baselearners = load_baselearners(args)
+    logging.info("loading ensemble...")
     ensemble = load_ensemble(args, baselearners)
+    logging.info("evaluating...")
     evaluate_ensemble(ensemble)
+    logging.info("saving...")
     save_data(args, ensemble)
 
 
