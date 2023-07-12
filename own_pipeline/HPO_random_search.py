@@ -22,8 +22,7 @@ from tqdm import tqdm
 
 from nes.ensemble_selection.containers import METRICS
 from nes.ensemble_selection.utils import make_predictions, evaluate_predictions
-from own_pipeline.baselearner import model_seeds
-
+from own_pipeline.containers.baselearner import model_seeds
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
