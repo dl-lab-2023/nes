@@ -1,8 +1,11 @@
 """reference: nes/ensemble_selection/evaluate_ensembles.py"""
 
 import argparse
+import json
+import logging
 import os
 from argparse import Namespace
+from pathlib import Path
 from typing import List
 
 import torch
@@ -29,6 +32,12 @@ def parse_arguments() -> Namespace:
         "--ensemble_dir",
         type=str,
         default="saved_ensembles"
+    )
+    parser.add_argument(
+        "--ensemble_statistics_dir",
+        type=str,
+        default="ensemble_statistics",
+        help="directory to store all information for plotting"
     )
     parser.add_argument(
         "--ensemble_name",
@@ -79,12 +88,22 @@ def evaluate_ensemble(ensemble: Ensemble):
     torch.cuda.empty_cache()
 
 
+def save_data(args: Namespace, ensemble: Ensemble):
+    Path(args.ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
+    with open(os.path.join(args.ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
+        json.dump({
+            "baselearners": list(torch.load(f"{args.ensemble_dir}/{args.ensemble_name}.pt")),
+            "evaluation": ensemble.evals,
+            "evaluation_avg_baselearner": dict(ensemble.avg_baselearner_evals),
+        }, f, sort_keys=True, indent=4)
+
+
 def main():
     args = parse_arguments()
     baselearners = load_baselearners(args)
     ensemble = load_ensemble(args, baselearners)
     evaluate_ensemble(ensemble)
-    print(dict(ensemble.avg_baselearner_evals))
+    save_data(args, ensemble)
 
 
 if __name__ == '__main__':
