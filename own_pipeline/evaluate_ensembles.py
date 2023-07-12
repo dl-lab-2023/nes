@@ -105,6 +105,7 @@ def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
             "baselearners": list(baselearner_ids),  # set is not serializable
             "evaluation": ensemble.evals,
             "evaluation_avg_baselearner": dict(ensemble.avg_baselearner_evals),
+            "evaluation_oracle": ensemble.oracle_evals
         }, f, sort_keys=True, indent=4)
 
 
