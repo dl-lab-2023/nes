@@ -5,9 +5,7 @@ from torch.utils.data import TensorDataset
 import os
 import torch
 
-from nes.ensemble_selection.containers import METRICS, check_to_avoid_overwrite
-
-model_seeds = namedtuple(typename="model_seeds", field_names=["arch", "init", "scheme"])
+from nes.ensemble_selection.containers import METRICS, check_to_avoid_overwrite, model_seeds
 
 
 class Baselearner:

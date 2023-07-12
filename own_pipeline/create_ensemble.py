@@ -8,9 +8,8 @@ from pathlib import Path
 from nes.ensemble_selection.utils import (
     args_to_device,
 )
-# from nes.ensemble_selection.config import BUDGET, PLOT_EVERY
 from nes.ensemble_selection.esas import registry as esas_registry
-from own_pipeline.baselearner import load_baselearner, model_seeds
+from own_pipeline.containers.baselearner import load_baselearner, model_seeds
 
 
 def run_esa(M, population, esa, val_severity, validation_size=-1, diversity_strength=None):

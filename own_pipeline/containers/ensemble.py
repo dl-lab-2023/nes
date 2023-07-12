@@ -5,18 +5,15 @@ import numpy as np
 
 from torch.utils.data import TensorDataset
 from collections import defaultdict
-from types import SimpleNamespace
 from itertools import combinations
 
-from nes.ensemble_selection.containers import check_to_avoid_overwrite
 from nes.ensemble_selection.utils import (
     evaluate_predictions,
     form_ensemble_pred,
     form_ensemble_pred_v_2,
 )
-from own_pipeline.baselearner import Baselearner
-
-METRICS = SimpleNamespace(loss="loss", accuracy="acc", error="error", ece="ece")
+from nes.ensemble_selection.containers import METRICS, check_to_avoid_overwrite
+from own_pipeline.containers.baselearner import Baselearner
 
 
 class Ensemble:

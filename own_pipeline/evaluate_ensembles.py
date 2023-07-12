@@ -9,7 +9,7 @@ import torch
 
 from own_pipeline.containers.ensemble import Ensemble
 from nes.ensemble_selection.utils import args_to_device
-from own_pipeline.baselearner import load_baselearner, Baselearner, model_seeds
+from own_pipeline.containers.baselearner import load_baselearner, Baselearner, model_seeds
 
 
 def parse_arguments() -> Namespace:
