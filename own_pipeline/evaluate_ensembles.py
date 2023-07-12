@@ -6,7 +6,7 @@ import logging
 import os
 from argparse import Namespace
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import torch
 
@@ -50,7 +50,7 @@ def parse_arguments() -> Namespace:
     return parser.parse_args()
 
 
-def load_baselearners(args: Namespace) -> List[Baselearner]:
+def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
     id_set: set[int] = torch.load(f"{args.ensemble_dir}/{args.ensemble_name}.pt")
     POOL_NAME = "own_rs"
 
@@ -66,7 +66,7 @@ def load_baselearners(args: Namespace) -> List[Baselearner]:
     # move to device
     for b in baselearners:
         b.to_device(args_to_device(args.device))
-    return baselearners
+    return id_set, baselearners
 
 
 def load_ensemble(args: Namespace, baselearners: List[Baselearner]) -> Ensemble:
@@ -88,11 +88,11 @@ def evaluate_ensemble(ensemble: Ensemble):
     torch.cuda.empty_cache()
 
 
-def save_data(args: Namespace, ensemble: Ensemble):
+def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
     Path(args.ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
     with open(os.path.join(args.ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
         json.dump({
-            "baselearners": list(torch.load(f"{args.ensemble_dir}/{args.ensemble_name}.pt")),
+            "baselearners": list(baselearner_ids),  # set is not serializable
             "evaluation": ensemble.evals,
             "evaluation_avg_baselearner": dict(ensemble.avg_baselearner_evals),
         }, f, sort_keys=True, indent=4)
@@ -102,13 +102,13 @@ def main():
     logging.info("parsing arguments...")
     args = parse_arguments()
     logging.info("loading baselearners...")
-    baselearners = load_baselearners(args)
+    ids, baselearners = load_baselearners(args)
     logging.info("loading ensemble...")
     ensemble = load_ensemble(args, baselearners)
     logging.info("evaluating...")
     evaluate_ensemble(ensemble)
     logging.info("saving...")
-    save_data(args, ensemble)
+    save_data(args, ensemble, ids)
 
 
 if __name__ == '__main__':
