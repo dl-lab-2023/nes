@@ -1,6 +1,10 @@
 #!/bin/bash
 # See https://wiki.bwhpc.de/e/NEMO/Moab#Job_array_example
 
+# For this job, you need to set the $NUM_SEEDS_PER_TASK environment variable!
+# Example command for submitting:
+# msub -t 0-99 -v NUM_SEEDS_PER_TASK=10 -l nodes=1:ppn=1 own_pipeline/cluster_train_baselearners_rs.sh
+
 set -e
 
 # The NEMO cluster offers getting conda using the "module" feature
@@ -22,7 +26,6 @@ conda activate $CONDA_WORKSPACE_NAME
 #echo Activated conda environment
 
 #echo Running work...
-NUM_SEEDS_PER_TASK=$1
 TASK_NUM=$((MOAB_JOBARRAYINDEX / NUM_SEEDS_PER_TASK))
 TASK_NUM=$((TASK_NUM + 1)) # Start counting at 1 instead of at 0
 TASK_ID=$(sed "${TASK_NUM}q;d" own_pipeline/task_ids.txt) # Get line with number $TASK_NUM from the text file
