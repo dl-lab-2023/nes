@@ -23,6 +23,7 @@ from tqdm import tqdm
 from nes.ensemble_selection.containers import METRICS
 from nes.ensemble_selection.utils import make_predictions, evaluate_predictions
 from own_pipeline.containers.baselearner import model_seeds
+from own_pipeline.lookahead import Lookahead
 from own_pipeline.util import enable_logging
 
 
@@ -113,6 +114,9 @@ class Tabulartrain(nn.Module):
                 self.model.parameters(), lr=learning_rate, weight_decay=wd)
         else:
             raise NotImplementedError()
+        
+        if config["look_ahead_optimizer"]:
+            optimizer = Lookahead(optimizer, la_steps=config["LA_num_steps"], la_alpha=config["LA_step_size"])
         
         if config["stochastic_weight_avg"]:
             optimizer = torchcontrib.optim.SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=0.05)
