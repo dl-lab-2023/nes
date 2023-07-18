@@ -23,7 +23,7 @@ conda activate $CONDA_WORKSPACE_NAME
 echo Activated conda environment
 
 echo Running work...
-python -m own_pipeline.HPO_random_search --seed $MOAB_JOBARRAYINDEX
+python -m own_pipeline.train_baselearners_rs --seed $MOAB_JOBARRAYINDEX
 
 echo "DONE"
 echo "Finished at $(date)"
