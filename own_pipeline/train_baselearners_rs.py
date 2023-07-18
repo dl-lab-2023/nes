@@ -11,7 +11,7 @@ import numpy as np
 import openml
 import torch
 import torch.nn as nn
-from ConfigSpace import ConfigurationSpace, Float, Configuration
+from ConfigSpace import ConfigurationSpace, Float, Configuration, Integer
 from autoPyTorch.data.tabular_validator import TabularInputValidator
 from autoPyTorch.datasets.resampling_strategy import HoldoutValTypes
 from autoPyTorch.datasets.tabular_dataset import TabularDataset
@@ -42,8 +42,14 @@ def set_seed_for_random_engines(seed: int, device):
 
 def sample_random_hp_configuration(seed: int) -> Configuration:
     cs = ConfigurationSpace({
+        "batch_normalization": [True, False],
+        "stochastic_weight_avg": [True, False],
+        "look_ahead_optimizer": [True, False],
+        "LA_step_size": Float("LA_step_size", bounds=(0.5, 0.8)),
+        "LA_num_steps": Integer("LA_num_steps", bounds=(5, 10)),
+        "weight_decay": Float("weight_decay", bounds=(0.00001, 0.1), log=True),
+
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
-        "weight_decay": Float("weight_decay", bounds=(0.001, 0.1), log=True),
         "optimizer": ["SGD", "Adam"],
         "num_epochs": [100]
     })
@@ -52,14 +58,21 @@ def sample_random_hp_configuration(seed: int) -> Configuration:
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, output_size: int):
+    def __init__(self, input_size: int, hidden_size: int, output_size: int, batch_norm: bool):
         super(MLP, self).__init__()
         self.relu = nn.ReLU()
-        self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float64)
-        self.fc2 = nn.Linear(hidden_size, int(
-            hidden_size // 2), dtype=torch.float64)
-        self.fc3 = nn.Linear(int(hidden_size // 2),
-                             output_size, dtype=torch.float64)
+        self.fc1 = self.get_layer_by_batchnorm(input_size, hidden_size, batch_norm)
+        self.fc2 = self.get_layer_by_batchnorm(hidden_size, int(hidden_size // 2), batch_norm)
+        self.fc3 = self.get_layer_by_batchnorm(int(hidden_size // 2), output_size, batch_norm)
+
+    @staticmethod
+    def get_layer_by_batchnorm(input_size: int, hidden_size: int, batch_norm: bool):
+        if not batch_norm:
+            return nn.Linear(input_size, hidden_size, dtype=torch.float64)
+        return nn.Sequential(
+            nn.BatchNorm2d(input_size),
+            nn.Linear(input_size, hidden_size, dtype=torch.float64)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.fc1(x))
@@ -69,10 +82,10 @@ class MLP(nn.Module):
 
 
 class Tabulartrain(nn.Module):
-    def __init__(self, input_size: int, output_size: int) -> None:
+    def __init__(self, input_size: int, output_size: int, batch_norm: bool) -> None:
         super(Tabulartrain, self).__init__()
         hidden_size = self._get_hidden_size(input_size)
-        self.model = MLP(input_size, hidden_size, output_size)
+        self.model = MLP(input_size, hidden_size, output_size, batch_norm)
 
     def _get_hidden_size(self, input_size):
         # Adjust the factor based on your preference
@@ -248,7 +261,7 @@ def run_train(seed: int, save_path: str, openml_task_id: int):
     input_size = get_layer_shape(X_train_shape)
     output_size = get_layer_shape(y_train_shape)
 
-    model = Tabulartrain(input_size, output_size)
+    model = Tabulartrain(input_size, output_size, config["batch_normalization"])
     model.to(device)
 
     logging.info(f" (configurations {config}, seed: {seed})...")
