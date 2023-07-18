@@ -6,7 +6,7 @@ import random
 import time
 import json
 from typing import Tuple
-
+import torchcontrib
 import numpy as np
 import openml
 import torch
@@ -113,6 +113,9 @@ class Tabulartrain(nn.Module):
                 self.model.parameters(), lr=learning_rate, weight_decay=wd)
         else:
             raise NotImplementedError()
+        
+        if config["stochastic_weight_avg"]:
+            optimizer = torchcontrib.optim.SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=0.05)
 
         logging.info(f"Starting training with {config=}, {seed=}")
 
@@ -134,6 +137,12 @@ class Tabulartrain(nn.Module):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+        if type(optimizer) == torchcontrib.optim.SWA:
+            logging.info("TODO DEBUG: optimizer is type SWA, swapping. Pls manually verify that this behavior is correct, than remove this debug output!")
+            optimizer.swap_swa_sgd()
+        else:
+            logging.info("TODO DEBUG: optimizer is NOT type SWA, NOT swapping. Pls manually verify that this behavior is correct, than remove this debug output!")
 
         logging.info(
             f'Training finished in {round(time.time() - start_time, 2)} sec')
@@ -220,7 +229,7 @@ def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
         validator=input_validator,
         resampling_strategy=HoldoutValTypes.holdout_validation,
         resampling_strategy_args=None,
-        dataset_name=f"openml-{task_id}",
+        dataset_name=f"openml-{openml_task_id}",
         seed=seed
     )
 
