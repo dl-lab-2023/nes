@@ -152,7 +152,6 @@ class Tabulartrain(nn.Module):
 
         if config["stochastic_weight_avg"]:
             torch.optim.swa_utils.update_bn(train_loader, swa_model)
-            optimizer.swap_swa_sgd()
 
         logging.info(
             f'Training finished in {round(time.time() - start_time, 2)} sec')
