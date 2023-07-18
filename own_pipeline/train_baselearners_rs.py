@@ -51,7 +51,7 @@ def sample_random_hp_configuration(seed: int) -> Configuration:
         "weight_decay": Float("weight_decay", bounds=(0.00001, 0.1), log=True),
 
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
-        "optimizer": ["SGD", "Adam"],
+        "optimizer": ["SGD", "Adam", "AdamW"],
         "num_epochs": [100]
     })
     cs.seed(seed)
@@ -112,6 +112,8 @@ class Tabulartrain(nn.Module):
         elif optim == 'Adam':
             optimizer = torch.optim.Adam(
                 self.model.parameters(), lr=learning_rate, weight_decay=wd)
+        elif optim == 'AdamW':
+            optimizer = torch.optim.AdamW(self.model.parameters(), lr=learning_rate, weight_decay=wd)
         else:
             raise NotImplementedError()
 
