@@ -13,21 +13,25 @@ CONDA_WORKSPACE_NAME=dl-lab
 
 echo "Started at $(date)"
 echo "MOAB_JOBARRAYINDEX (this job id): $MOAB_JOBARRAYINDEX"
-echo "MOAB_JOBARRAYRANGE (num total jobs of this task): $MOAB_JOBARRAYRANGE"
 
 cd $(ws_find $MOAB_WORKSPACE_NAME)/nes
-echo "PWD: $PWD"
+#echo "PWD: $PWD"
 
 eval "$($CONDA_BIN shell.bash hook)"
 conda activate $CONDA_WORKSPACE_NAME
-echo Activated conda environment
+#echo Activated conda environment
 
-echo Running work...
-while read taskid; do
-  echo "training on task: $taskid"
-  python -m own_pipeline.train_baselearners_rs --seed $MOAB_JOBARRAYINDEX --openml_task_id $taskid
-done <own_pipeline/task_ids.txt
+#echo Running work...
+NUM_SEEDS_PER_TASK=$1
+TASK_NUM=$((MOAB_JOBARRAYINDEX / NUM_SEEDS_PER_TASK))
+TASK_NUM=$((TASK_NUM + 1)) # Start counting at 1 instead of at 0
+TASK_ID=$(sed "${TASK_NUM}q;d" own_pipeline/task_ids.txt) # Get line with number $TASK_NUM from the text file
+SEED=$((MOAB_JOBARRAYINDEX % NUM_SEEDS_PER_TASK))
 
+echo NUM_SEEDS_PER_TASK=$NUM_SEEDS_PER_TASK
+echo TASK_NUM=$TASK_NUM
+echo TASK_ID=$TASK_ID
+echo SEED=$SEED
+python -m own_pipeline.train_baselearners_rs --openml_task_id=$TASK_ID --seed $SEED
 
-echo "DONE"
 echo "Finished at $(date)"

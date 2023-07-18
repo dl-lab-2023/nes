@@ -19,14 +19,13 @@ if [[ -n $MOAB_JOBARRAYINDEX ]]; then
 fi
 
 cd $(ws_find $MOAB_WORKSPACE_NAME)/nes
-echo "PWD: $PWD"
+#echo "PWD: $PWD"
 
 eval "$($CONDA_BIN shell.bash hook)"
 conda activate $CONDA_WORKSPACE_NAME
-echo Activated conda environment
+#echo Activated conda environment
 
-echo Running work...
+#echo Running work...
 python -m own_pipeline.create_ensemble --max_seed 100 --M 20 --openml_task_id=233088
 
-echo "DONE"
 echo "Finished at $(date)"

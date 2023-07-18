@@ -19,14 +19,13 @@ if [[ -n $MOAB_JOBARRAYINDEX ]]; then
 fi
 
 cd $(ws_find $MOAB_WORKSPACE_NAME)/nes
-echo "PWD: $PWD"
+#echo "PWD: $PWD"
 
 eval "$($CONDA_BIN shell.bash hook)"
 conda activate $CONDA_WORKSPACE_NAME
-echo Activated conda environment
+#echo Activated conda environment
 
-echo Running work...
+#echo Running work...
 python -m own_pipeline.evaluate_ensemble --ensemble_dir=saved_ensembles/task_233088 --ensemble_name=ensemble_5_baselearners
 
-echo "DONE"
 echo "Finished at $(date)"
