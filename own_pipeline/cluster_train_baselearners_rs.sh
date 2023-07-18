@@ -23,7 +23,7 @@ conda activate $CONDA_WORKSPACE_NAME
 echo Activated conda environment
 
 echo Running work...
-python -m own_pipeline.train_baselearners_rs --seed $MOAB_JOBARRAYINDEX
+python -m own_pipeline.train_baselearners_rs --seed $MOAB_JOBARRAYINDEX --openml_task_id=233088
 
 echo "DONE"
 echo "Finished at $(date)"

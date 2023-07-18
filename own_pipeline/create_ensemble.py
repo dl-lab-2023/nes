@@ -49,6 +49,8 @@ def run_esa(M, population, esa, val_severity, validation_size=-1, diversity_stre
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--openml_task_id", type=int, default=233088, help="OpenML task id")
+    parser.add_argument(
         "--esa",
         type=str,
         default="beam_search",
@@ -79,7 +81,7 @@ def main():
     if device == "cuda":
         torch.cuda.set_device(device)
 
-    ENSEMBLE_SAVE_DIR = "saved_ensembles"
+    ENSEMBLE_SAVE_DIR = f"./saved_ensembles/task_{args.openml_task_id}"
     Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True)
 
     # ===============================
@@ -93,7 +95,7 @@ def main():
 
     # ===============================
 
-    BASELEARNER_DIR = "saved_model"
+    BASELEARNER_DIR = f"./saved_model/task_{args.openml_task_id}"
 
     pool_keys = POOLS[pool_name]
 
@@ -111,7 +113,7 @@ def main():
         baselearner.partially_to_device(device=args_to_device(device if str(device) != "cpu" else -1))
         # model.to_device(args_to_device(args.device))
 
-    pools, num_arch_samples = get_pools_and_num_arch_samples(POOLS, pool_name, args.max_seed).values()
+    pools, num_arch_samples = get_pools_and_num_arch_samples(POOLS, pool_name).values()
 
     esa = esas_registry[args.esa]
     severities = range(1)  # In case of our dataset
@@ -172,7 +174,7 @@ def main():
     logging.info("Ensemble selection completed.")
 
 
-def get_pools_and_num_arch_samples(POOLS, pool_name, max_seed):
+def get_pools_and_num_arch_samples(POOLS, pool_name):
     pool_keys = POOLS[pool_name]
 
     num_arch_samples = range(1)

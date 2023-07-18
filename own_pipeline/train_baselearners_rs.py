@@ -165,8 +165,8 @@ class Tabulartrain(nn.Module):
 
 # Defining the dataset
 
-def dataloader(seed, batch_size, task_id=233088, test_size: float = 0.2):
-    task: OpenMLTask = openml.tasks.get_task(task_id=task_id)
+def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
+    task: OpenMLTask = openml.tasks.get_task(task_id=openml_task_id)
     num_classes = len(getattr(task, "class_labels"))
     dataset = task.get_dataset()
     X, y, categorical_indicator, _ = dataset.get_data(
@@ -228,7 +228,7 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed: int, save_path: str):
+def run_train(seed: int, save_path: str, openml_task_id: int):
     """
     Function that trains a given architecture and random hyperparameters.
 
@@ -243,7 +243,7 @@ def run_train(seed: int, save_path: str):
     config = sample_random_hp_configuration(seed)
 
     train_loader, test_loader, X_train_shape, y_train_shape, num_classes = dataloader(
-        seed, batch_size=16)
+        seed, batch_size=16, openml_task_id=openml_task_id)
 
     input_size = get_layer_shape(X_train_shape)
     output_size = get_layer_shape(y_train_shape)
@@ -269,9 +269,11 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser()
     argParser.add_argument(
         "--seed", type=int, default=1, help="Random generator seed")
+    argParser.add_argument(
+        "--openml_task_id", type=int, default=233088, help="OpenML task id")
     args = argParser.parse_args()
 
-    save_path = "./saved_model"
+    save_path = f"./saved_model/task_{args.openml_task_id}"
     Path(save_path).mkdir(exist_ok=True)
 
-    run_train(args.seed, save_path=save_path)
+    run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id)

@@ -26,7 +26,7 @@ conda activate $CONDA_WORKSPACE_NAME
 echo Activated conda environment
 
 echo Running work...
-python -m own_pipeline.evaluate_ensemble --ensemble_name=ensemble_5_baselearners
+python -m own_pipeline.evaluate_ensemble --ensemble_dir=saved_ensembles/task_233088 --ensemble_name=ensemble_5_baselearners
 
 echo "DONE"
 echo "Finished at $(date)"

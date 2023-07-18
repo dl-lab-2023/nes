@@ -26,20 +26,8 @@ def parse_arguments() -> Namespace:
         help="Index of GPU device to use. For CPU, set to -1. Default: 0.",
     )
     parser.add_argument(
-        "--baselearner_dir",
-        type=str,
-        default="saved_model"
-    )
-    parser.add_argument(
-        "--ensemble_dir",
-        type=str,
-        default="saved_ensembles"
-    )
-    parser.add_argument(
-        "--ensemble_statistics_dir",
-        type=str,
-        default="ensemble_statistics",
-        help="directory to store all information for plotting"
+        "--openml_task_id",
+        type=int,
     )
     parser.add_argument(
         "--ensemble_name",
@@ -54,7 +42,12 @@ def parse_arguments() -> Namespace:
 
 def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
     logging.info("loading baselearners...")
-    id_set: set[int] = torch.load(f"{args.ensemble_dir}/{args.ensemble_name}.pt")
+
+    baselearner_dir = f"./saved_model/task_{args.openml_task_id}"
+    ensemble_dir = f"./saved_ensembles/task_{args.openml_task_id}"
+    
+
+    id_set: set[int] = torch.load(f"{ensemble_dir}/{args.ensemble_name}.pt")
     POOL_NAME = "own_rs"
 
     model_seed_list = [model_seeds(arch=seed, init=seed, scheme=POOL_NAME) for seed in id_set]
@@ -62,7 +55,7 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
         load_baselearner(
             model_id=k,
             load_nn_module=False,
-            baselearner_dir=args.baselearner_dir
+            baselearner_dir=baselearner_dir
         )
         for k in model_seed_list
     ]
@@ -98,9 +91,11 @@ def evaluate_ensemble(ensemble: Ensemble):
 
 
 def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
+    ensemble_statistics_dir = f"./ensemble_stats/task_{args.openml_task_id}"
+    
     logging.info("saving...")
-    Path(args.ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
-    with open(os.path.join(args.ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
+    Path(ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
+    with open(os.path.join(ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
         json.dump({
             "baselearners": list(baselearner_ids),  # set is not serializable
             "evaluation": ensemble.evals,
