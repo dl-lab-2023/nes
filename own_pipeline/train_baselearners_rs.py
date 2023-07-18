@@ -6,7 +6,7 @@ import random
 import time
 import json
 from typing import Tuple
-import torchcontrib
+from torch.optim.swa_utils import AveragedModel, SWALR
 import numpy as np
 import openml
 import torch
@@ -71,7 +71,7 @@ class MLP(nn.Module):
         if not batch_norm:
             return nn.Linear(input_size, hidden_size, dtype=torch.float64)
         return nn.Sequential(
-            nn.BatchNorm2d(input_size),
+            nn.BatchNorm1d(input_size, dtype=torch.float64),
             nn.Linear(input_size, hidden_size, dtype=torch.float64)
         )
 
@@ -114,12 +114,16 @@ class Tabulartrain(nn.Module):
                 self.model.parameters(), lr=learning_rate, weight_decay=wd)
         else:
             raise NotImplementedError()
-        
+
         if config["look_ahead_optimizer"]:
             optimizer = Lookahead(optimizer, la_steps=config["LA_num_steps"], la_alpha=config["LA_step_size"])
-        
+
         if config["stochastic_weight_avg"]:
-            optimizer = torchcontrib.optim.SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=0.05)
+            swa_model = AveragedModel(self.model)
+            swa_scheduler = SWALR(optimizer, swa_lr=0.05)
+
+            # Typical value, see https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/
+            swa_start = 0.75 * num_epochs
 
         logging.info(f"Starting training with {config=}, {seed=}")
 
@@ -142,11 +146,13 @@ class Tabulartrain(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-        if type(optimizer) == torchcontrib.optim.SWA:
-            logging.info("TODO DEBUG: optimizer is type SWA, swapping. Pls manually verify that this behavior is correct, than remove this debug output!")
+                if config["stochastic_weight_avg"] and epoch > swa_start:
+                    swa_model.update_parameters(self.model)
+                    swa_scheduler.step()
+
+        if config["stochastic_weight_avg"]:
+            torch.optim.swa_utils.update_bn(train_loader, swa_model)
             optimizer.swap_swa_sgd()
-        else:
-            logging.info("TODO DEBUG: optimizer is NOT type SWA, NOT swapping. Pls manually verify that this behavior is correct, than remove this debug output!")
 
         logging.info(
             f'Training finished in {round(time.time() - start_time, 2)} sec')
@@ -159,7 +165,11 @@ class Tabulartrain(nn.Module):
         torch.save(model_id, os.path.join(model_save_dir, "model_id.pt"))
         torch.save(self.model, os.path.join(model_save_dir, "nn_module.pt"))
 
-        preds = make_predictions(self.model, test_loader, device, num_classes)
+        prediction_model = self.model
+        if config["stochastic_weight_avg"]:
+            prediction_model = swa_model
+
+        preds = make_predictions(prediction_model, test_loader, device, num_classes)
         evaluation = evaluate_predictions(preds)
         evaluation = {
             METRICS.loss: evaluation["loss"],
