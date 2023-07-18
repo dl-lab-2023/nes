@@ -134,7 +134,7 @@ class Tabulartrain(nn.Module):
         # Train the model
         for epoch in tqdm(range(num_epochs)):
             for i, (data, labels) in enumerate(train_loader):
-                data = data.to(device)
+                data = data.to(device).type(torch.float64)
                 labels = labels.to(device)
                 labels = torch.unsqueeze(labels, 1)
 
@@ -142,7 +142,9 @@ class Tabulartrain(nn.Module):
                 loss = criterion(outputs, labels)
 
                 if torch.isnan(loss):
-                    raise ValueError("Training failed. Loss is NaN.")
+                    x = torch.isnan(data).any()
+                    y = torch.isnan(labels).any()
+                    raise ValueError(f"Training failed. Loss is NaN. - data contains NaN: {x or y}")
 
                 optimizer.zero_grad()
                 loss.backward()
