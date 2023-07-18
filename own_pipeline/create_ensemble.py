@@ -82,7 +82,7 @@ def main():
         torch.cuda.set_device(device)
 
     ENSEMBLE_SAVE_DIR = f"./saved_ensembles/task_{args.openml_task_id}"
-    Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True)
+    Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True, parents=True)
 
     # ===============================
     pool_name = "own_rs"

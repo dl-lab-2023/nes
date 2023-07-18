@@ -160,7 +160,7 @@ class Tabulartrain(nn.Module):
 
         # save model
         model_save_dir = os.path.join(save_path, f"seed_{seed}")
-        Path(model_save_dir).mkdir(exist_ok=True)
+        Path(model_save_dir).mkdir(exist_ok=True, parents=True)
 
         model_id = model_seeds(arch=seed, init=seed, scheme="own_rs")._asdict()
         torch.save(model_id, os.path.join(model_save_dir, "model_id.pt"))
@@ -311,6 +311,6 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     save_path = f"./saved_model/task_{args.openml_task_id}"
-    Path(save_path).mkdir(exist_ok=True)
+    Path(save_path).mkdir(exist_ok=True, parents=True)
 
     run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id)
