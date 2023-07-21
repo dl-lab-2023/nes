@@ -52,19 +52,37 @@ def sample_random_hp_configuration(seed: int) -> Configuration:
 
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "optimizer": ["SGD", "Adam", "AdamW"],
-        "num_epochs": [100]
+        "num_epochs": [100],
+        # nas
+        "number_of_layers": Integer("number_of_layers", bounds=(2, 8)),
+        "hidden_size": Integer("hidden_size", bounds=(100, 1000)),
+        "hidden_size_adaptation": Integer("hidden_size_adaption", bounds=(2, 5))
     })
     cs.seed(seed)
     return cs.sample_configuration(None)
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, output_size: int, batch_norm: bool):
+    def __init__(self, input_size: int, output_size: int, config: Configuration):
         super(MLP, self).__init__()
+
+        number_of_layers = config["number_of_layers"]
+        hidden_size = config["hidden_size"]
+        hidden_size_adaptation = config["hidden_size_adaptation"]
+        batch_norm = config["batch_normalization"]
+
         self.relu = nn.ReLU()
-        self.fc1 = self.get_layer_by_batchnorm(input_size, hidden_size, batch_norm)
-        self.fc2 = self.get_layer_by_batchnorm(hidden_size, int(hidden_size // 2), batch_norm)
-        self.fc3 = self.get_layer_by_batchnorm(int(hidden_size // 2), output_size, batch_norm)
+
+        self.hidden_layers = nn.ModuleList()
+
+        self.hidden_layers.append(self.get_layer_by_batchnorm(input_size, hidden_size, batch_norm))
+
+        for _ in range(number_of_layers - 2):
+            new_hidden_size = int(hidden_size // hidden_size_adaptation)
+            self.hidden_layers.append(self.get_layer_by_batchnorm(hidden_size, new_hidden_size, batch_norm))
+            hidden_size = new_hidden_size
+
+        self.fc_out = self.get_layer_by_batchnorm(hidden_size, output_size, batch_norm)
 
     @staticmethod
     def get_layer_by_batchnorm(input_size: int, hidden_size: int, batch_norm: bool):
@@ -76,22 +94,16 @@ class MLP(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.fc3(x)
+        for layer in self.hidden_layers:
+            x = self.relu(layer(x))
+        x = self.fc_out(x)
         return x
 
 
 class Tabulartrain(nn.Module):
-    def __init__(self, input_size: int, output_size: int, batch_norm: bool) -> None:
+    def __init__(self, input_size: int, output_size: int, config: Configuration) -> None:
         super(Tabulartrain, self).__init__()
-        hidden_size = self._get_hidden_size(input_size)
-        self.model = MLP(input_size, hidden_size, output_size, batch_norm)
-
-    def _get_hidden_size(self, input_size):
-        # Adjust the factor based on your preference
-        hidden_size = int(input_size * 0.5)
-        return hidden_size
+        self.model = MLP(input_size, output_size, config)
 
     def forward(self, x):
         self.model.forward(x)
@@ -287,7 +299,7 @@ def run_train(seed: int, save_path: str, openml_task_id: int):
     input_size = get_layer_shape(X_train_shape)
     output_size = get_layer_shape(y_train_shape)
 
-    model = Tabulartrain(input_size, output_size, config["batch_normalization"])
+    model = Tabulartrain(input_size, output_size, config)
     model.to(device)
 
     logging.info(f" (configurations {config}, seed: {seed})...")
