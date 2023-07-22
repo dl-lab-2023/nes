@@ -297,8 +297,6 @@ def run_train(seed: int, save_path: str, openml_task_id: int, only_download_data
     model = Tabulartrain(input_size, output_size, config["batch_normalization"])
     model.to(device)
 
-    logging.info(f" (configurations {config}, seed: {seed})...")
-
     model.base_learner_train_save(
         seed=seed,
         config=config,
@@ -327,4 +325,3 @@ if __name__ == '__main__':
     Path(save_path).mkdir(exist_ok=True, parents=True)
 
     run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id, only_download_dataset=args.only_download_dataset)
-    
