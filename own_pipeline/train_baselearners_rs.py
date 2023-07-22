@@ -205,7 +205,11 @@ class Tabulartrain(nn.Module):
 # Defining the dataset
 
 def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
-    task: OpenMLTask = openml.tasks.get_task(task_id=openml_task_id)
+    task: OpenMLTask = openml.tasks.get_task(task_id=openml_task_id,
+                                             download_data=False,
+                                             download_qualities=False,
+                                             download_features_meta_data=False)
+
     num_classes = len(getattr(task, "class_labels"))
     dataset = task.get_dataset()
     X, y, categorical_indicator, _ = dataset.get_data(
@@ -267,7 +271,7 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed: int, save_path: str, openml_task_id: int):
+def run_train(seed: int, save_path: str, openml_task_id: int, only_download_dataset: bool):
     """
     Function that trains a given architecture and random hyperparameters.
 
@@ -283,6 +287,9 @@ def run_train(seed: int, save_path: str, openml_task_id: int):
 
     train_loader, test_loader, X_train_shape, y_train_shape, num_classes = dataloader(
         seed, batch_size=16, openml_task_id=openml_task_id)
+
+    if only_download_dataset:
+        return
 
     input_size = get_layer_shape(X_train_shape)
     output_size = get_layer_shape(y_train_shape)
@@ -310,9 +317,14 @@ if __name__ == '__main__':
         "--seed", type=int, default=1, help="Random generator seed")
     argParser.add_argument(
         "--openml_task_id", type=int, default=233088, help="OpenML task id")
+    argParser.add_argument(
+        "--only_download_dataset", type=bool, default=False, help="Only download the dataset and exit, do not train a base learner")
     args = argParser.parse_args()
+
+    logging.info(f"Starting with args: {args}")
 
     save_path = f"./saved_model/task_{args.openml_task_id}"
     Path(save_path).mkdir(exist_ok=True, parents=True)
 
-    run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id)
+    run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id, only_download_dataset=args.only_download_dataset)
+    

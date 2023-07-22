@@ -26,6 +26,6 @@ conda activate $CONDA_WORKSPACE_NAME
 #echo Activated conda environment
 
 #echo Running work...
-python -m own_pipeline.create_ensemble --max_seed 100 --M 20 --openml_task_id=233088
+python -m own_pipeline.create_ensemble --max_seed 500 --M 20 --openml_task_id=$TASK_ID
 
 echo "Finished at $(date)"
