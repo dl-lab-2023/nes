@@ -5,7 +5,12 @@
 # Example command for submitting:
 # msub -t 0-99 -v NUM_SEEDS_PER_TASK=10 -l nodes=1:ppn=1 own_pipeline/cluster_train_baselearners_rs.sh
 
-set -e
+handle_error() {
+    echo "ERROR processing the task"
+}
+
+set -eE
+trap 'handle_error' ERR
 
 # The NEMO cluster offers getting conda using the "module" feature
 # Unfortunately, the the most recent available Python version was 3.6.
