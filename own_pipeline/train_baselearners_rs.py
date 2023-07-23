@@ -14,7 +14,7 @@ import torch.nn as nn
 from ConfigSpace import ConfigurationSpace, Float, Configuration, Integer
 from autoPyTorch.data.tabular_validator import TabularInputValidator
 from autoPyTorch.datasets.resampling_strategy import HoldoutValTypes
-from autoPyTorch.datasets.tabular_dataset import TabularDataset
+from own_pipeline.float_tabular_dataset import FloatTabularDataset
 from openml import OpenMLTask
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
@@ -134,7 +134,7 @@ class Tabulartrain(nn.Module):
         # Train the model
         for epoch in tqdm(range(num_epochs)):
             for i, (data, labels) in enumerate(train_loader):
-                data = data.to(device).type(torch.float64)
+                data = data.to(device)
                 labels = labels.to(device)
                 labels = torch.unsqueeze(labels, 1)
 
@@ -242,7 +242,7 @@ def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
     input_validator.fit(X_train=X_train, y_train=y_train,
                         X_test=X_test, y_test=y_test)
 
-    dataset = TabularDataset(
+    dataset = FloatTabularDataset(
         X=X_train,
         Y=y_train,
         X_test=X_test,
