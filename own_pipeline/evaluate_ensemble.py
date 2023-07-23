@@ -11,7 +11,6 @@ from typing import List, Tuple
 import torch
 
 from own_pipeline.containers.ensemble import Ensemble
-from nes.ensemble_selection.utils import args_to_device
 from own_pipeline.containers.baselearner import load_baselearner, Baselearner, model_seeds
 from own_pipeline.util import enable_logging
 
@@ -19,12 +18,6 @@ from own_pipeline.util import enable_logging
 def parse_arguments() -> Namespace:
     logging.info("parsing arguments...")
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--device",
-        type=int,
-        default=-1,
-        help="Index of GPU device to use (e.g. 0). For CPU, set to -1. Default: -1.",
-    )
     parser.add_argument(
         "--openml_task_id",
         type=int,
@@ -54,8 +47,9 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
         for k in model_seed_list
     ]
     # move to device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     for b in baselearners:
-        b.to_device(args_to_device(args.device))
+        b.to_device(device)
     return id_set, baselearners
 
 
