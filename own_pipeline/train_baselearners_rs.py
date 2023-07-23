@@ -339,6 +339,15 @@ def run_train(seed: int, save_path: str, openml_task_id: int, only_download_data
     )
 
 
+def get_search_mode_appendix(args: argparse.Namespace):
+    search_mode = args["search_mode"]
+    if search_mode == 'nas':
+        return '_nas'
+    if search_mode == 'hp':
+        return ''
+    raise NotImplementedError(search_mode)
+
+
 if __name__ == '__main__':
     enable_logging()
     argParser = argparse.ArgumentParser()
@@ -359,7 +368,7 @@ if __name__ == '__main__':
 
     logging.info(f"Starting with args: {args}")
 
-    save_path = f"./saved_model/task_{args.openml_task_id}"
+    save_path = f"./saved_model/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
     Path(save_path).mkdir(exist_ok=True, parents=True)
 
     run_train(
