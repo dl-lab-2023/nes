@@ -36,6 +36,6 @@ TASK_ID=$(sed "${TASK_NUM}q;d" own_pipeline/task_ids.txt) # Get line with number
 
 # Train with one seed value per dataset in order to download each dataset once, instead of many times simultaneously (may lead to errors).
 # This is required by the docstring of the OpenML get_dataset() function.
-python -m own_pipeline.train_baselearners_rs --openml_task_id=$TASK_ID --only_download_dataset=true --seed 1
+python -m own_pipeline.train_baselearners_rs --openml_task_id $TASK_ID --only_download_dataset true --seed 1
 
 echo "Finished at $(date)"

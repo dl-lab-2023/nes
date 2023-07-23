@@ -29,6 +29,6 @@ conda activate $CONDA_WORKSPACE_NAME
 #echo Running work...
 TASK_NUM=$((MOAB_JOBARRAYINDEX + 1)) # Start counting at 1 instead of at 0
 TASK_ID=$(sed "${TASK_NUM}q;d" own_pipeline/task_ids.txt) # Get line with number $TASK_NUM from the text file
-python -m own_pipeline.create_ensemble --max_seed 500 --ensemble_size 20 --openml_task_id=$TASK_ID
+python -m own_pipeline.create_ensemble --max_seed 500 --ensemble_size 20 --openml_task_id $TASK_ID --search-mode 
 
 echo "Finished at $(date)"
