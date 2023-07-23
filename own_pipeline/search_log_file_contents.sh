@@ -21,7 +21,7 @@ for file in "$directory_path"/*; do
   if [ -f "$file" ]; then
     # Use grep to search for the string in the file
     if grep -i -q "$search_string" "$file"; then
-      echo "$file"
+      less "$file"
     fi
   fi
 done
