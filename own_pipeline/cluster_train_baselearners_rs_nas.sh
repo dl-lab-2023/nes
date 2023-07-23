@@ -40,6 +40,6 @@ echo NUM_SEEDS_PER_TASK=$NUM_SEEDS_PER_TASK
 echo TASK_NUM=$TASK_NUM
 echo TASK_ID=$TASK_ID
 echo SEED=$SEED
-python -m own_pipeline.train_baselearners_rs --openml_task_id $TASK_ID --seed $SEED --search_mode nas
+python -m own_pipeline.train_baselearners_rs --openml_task_id $TASK_ID --seed $SEED --search_mode nas --hp_search_result_dir ./saved_model
 
 echo "Finished at $(date)"
