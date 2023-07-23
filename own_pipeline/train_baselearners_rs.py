@@ -41,7 +41,27 @@ def set_seed_for_random_engines(seed: int, device):
         torch.backends.cudnn.benchmark = False
 
 
-def sample_random_hp_configuration(seed: int, search_mode: str) -> Configuration:
+def get_best_hparam(hp_search_result_dir: str, openml_task_id: int):
+    best_accuracy = 0.0
+    best_hyperparams = {}
+    path = os.path.join(hp_search_result_dir, f"saved_model/task_{openml_task_id}")
+    logging.info(f"looking for models in {path}")
+
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as json_file:
+                    data = json.load(json_file)
+                    accuracy = data['evaluation']['acc']
+                    if accuracy > best_accuracy:
+                        best_accuracy = accuracy
+                        best_hyperparams = data['hyperparams']
+    return best_hyperparams
+
+
+def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result_dir: str,
+                                   openml_task_id: int) -> Configuration:
     """
     :param search_mode: one of 'hp', 'nas'
     """
@@ -70,13 +90,14 @@ def sample_random_hp_configuration(seed: int, search_mode: str) -> Configuration
         config["hidden_size_adaptation"] = 4
 
     if search_mode == 'nas':
-        config["stochastic_weight_avg"] = True
-        config["look_ahead_optimizer"] = True
-        config["LA_step_size"] = 0.6
-        config["LA_num_steps"] = 8
-        config["weight_decay"] = 0.001
-        config["learning_rate"] = 0.001
-        config["optimizer"] = 'Adam'
+        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id)
+        config["stochastic_weight_avg"] = best_hparam["stochastic_weight_avg"]
+        config["look_ahead_optimizer"] = best_hparam["look_ahead_optimizer"]
+        config["LA_step_size"] = best_hparam["LA_step_size"]
+        config["LA_num_steps"] = best_hparam["LA_num_steps"]
+        config["weight_decay"] = best_hparam["weight_decay"]
+        config["learning_rate"] = best_hparam["learning_rate"]
+        config["optimizer"] = best_hparam["optimizer"]
 
     return config
 
@@ -302,7 +323,8 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed: int, save_path: str, openml_task_id: int, only_download_dataset: bool, search_mode: str):
+def run_train(seed: int, save_path: str, openml_task_id: int, only_download_dataset: bool, search_mode: str,
+              hp_search_result_dir: str):
     """
     Function that trains a given architecture and random hyperparameters.
 
@@ -314,7 +336,8 @@ def run_train(seed: int, save_path: str, openml_task_id: int, only_download_data
 
     set_seed_for_random_engines(seed, device)
 
-    config = sample_random_hp_configuration(seed, search_mode=search_mode)
+    config = sample_random_hp_configuration(seed, search_mode=search_mode, hp_search_result_dir=hp_search_result_dir,
+                                            openml_task_id=openml_task_id)
 
     train_loader, test_loader, X_train_shape, y_train_shape, num_classes = dataloader(
         seed, batch_size=16, openml_task_id=openml_task_id)
@@ -340,7 +363,7 @@ def run_train(seed: int, save_path: str, openml_task_id: int, only_download_data
 
 
 def get_search_mode_appendix(args: argparse.Namespace):
-    search_mode = args["search_mode"]
+    search_mode = args.search_mode
     if search_mode == 'nas':
         return '_nas'
     if search_mode == 'hp':
@@ -364,6 +387,13 @@ if __name__ == '__main__':
         required=True,
         choices=['hp', 'nas']
     )
+    argParser.add_argument(
+        "--hp_search_result_dir",
+        type=str,
+        default=None,
+        required=False,
+        help="the directory of the hp-search result"
+    )
     args = argParser.parse_args()
 
     logging.info(f"Starting with args: {args}")
@@ -376,5 +406,6 @@ if __name__ == '__main__':
         save_path=save_path,
         openml_task_id=args.openml_task_id,
         only_download_dataset=args.only_download_dataset,
-        search_mode=args.search_mode
+        search_mode=args.search_mode,
+        hp_search_result_dir=args.hp_search_result_dir,
     )
