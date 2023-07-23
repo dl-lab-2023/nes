@@ -40,27 +40,70 @@ def set_seed_for_random_engines(seed: int, device):
         # see docs, set false to disable NON-deterministic algorithms
         torch.backends.cudnn.benchmark = False
 
+def get_best_hparam(rood_dir: str):
+    best_accuracy = 0.0
+    best_hyperparams = {}
 
-def sample_random_hp_configuration(seed: int) -> Configuration:
+    for root, dirs, files in os.walk(rood_dir):
+        for file in files:
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as json_file:
+                    data = json.load(json_file)
+                    accuracy = data['evaluation']['acc']
+                    if accuracy > best_accuracy:
+                        best_accuracy = accuracy
+                        best_hyperparams = data['hyperparams']
+    return best_hyperparams
+
+
+def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_done: bool, task_id: int) -> Configuration:
+    """
+    :param search_mode: one of 'hp', 'nas', or 'both'
+    """
     cs = ConfigurationSpace({
-        "batch_normalization": [True, False],
         "stochastic_weight_avg": [True, False],
         "look_ahead_optimizer": [True, False],
         "LA_step_size": Float("LA_step_size", bounds=(0.5, 0.8)),
         "LA_num_steps": Integer("LA_num_steps", bounds=(5, 10)),
         "weight_decay": Float("weight_decay", bounds=(0.00001, 0.1), log=True),
-
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "optimizer": ["SGD", "Adam", "AdamW"],
         "num_epochs": [100],
         # nas
+        "batch_normalization": [True, False],
         "number_of_layers": Integer("number_of_layers", bounds=(2, 8)),
         "hidden_size": Integer("hidden_size", bounds=(100, 1000)),
-        "hidden_size_adaptation": Integer("hidden_size_adaption", bounds=(2, 5))
+        "hidden_size_adaptation": Integer("hidden_size_adaptation", bounds=(2, 5))
     })
     cs.seed(seed)
-    return cs.sample_configuration(None)
+    config = cs.sample_configuration(None)
 
+    if search_mode == 'hp':
+        config["batch_normalization"] = False
+        config["number_of_layers"] = 4
+        config["hidden_size"] = 500
+        config["hidden_size_adaptation"] = 4
+
+    if search_mode == 'nas' and hp_search_done is False:
+        config["stochastic_weight_avg"] = True
+        config["look_ahead_optimizer"] = True
+        config["LA_step_size"] = 0.6
+        config["LA_num_steps"] = 8
+        config["weight_decay"] = 0.001
+        config["learning_rate"] = 0.001
+        config["optimizer"] = 'Adam'
+    elif search_mode == 'nas' and hp_search_done:
+        hparams = get_best_hparam('./saved_model/task_' + str(task_id))
+        config["stochastic_weight_avg"] = hparams["stochastic_weight_avg"]
+        config["look_ahead_optimizer"] = hparams["look_ahead_optimizer"]
+        config["LA_step_size"] = hparams["LA_step_size"]
+        config["LA_num_steps"] = hparams["LA_num_steps"]
+        config["weight_decay"] = hparams["weight_decay"]
+        config["learning_rate"] = hparams["learning_rate"]
+        config["optimizer"] = hparams["optimizer"]
+
+    return config
 
 class MLP(nn.Module):
     def __init__(self, input_size: int, output_size: int, config: Configuration):
@@ -153,10 +196,10 @@ class Tabulartrain(nn.Module):
                 outputs = self.model(data)
                 loss = criterion(outputs, labels)
 
-                if torch.isnan(loss):
-                    x = torch.isnan(data).any()
-                    y = torch.isnan(labels).any()
-                    raise ValueError(f"Training failed. Loss is NaN. - data contains NaN: {x or y}")
+                # if torch.isnan(loss):
+                #     x = torch.isnan(data).any()
+                #     y = torch.isnan(labels).any()
+                #     raise ValueError(f"Training failed. Loss is NaN. - data contains NaN: {x or y}")
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -279,7 +322,7 @@ def get_layer_shape(shape: Tuple):
 
 
 # Define the train function to train
-def run_train(seed: int, save_path: str, openml_task_id: int):
+def run_train(seed: int, openml_task_id: int, save_path: str, only_download_dataset: bool, search_mode: str):
     """
     Function that trains a given architecture and random hyperparameters.
 
@@ -291,18 +334,24 @@ def run_train(seed: int, save_path: str, openml_task_id: int):
 
     set_seed_for_random_engines(seed, device)
 
-    config = sample_random_hp_configuration(seed)
+    if search_mode == 'nas' and os.path.exists(f"./own_pipeline/saved_model/task_{openml_task_id}"):
+        config = sample_random_hp_configuration(seed, search_mode=search_mode, task_id=openml_task_id, hp_search_done=True)
+    elif search_mode == 'nas' and not os.path.exists(f"./own_pipeline/saved_model/task_{openml_task_id}"):
+        config = sample_random_hp_configuration(seed, search_mode=search_mode, task_id=openml_task_id, hp_search_done=False)
+    elif search_mode == 'hp':
+        config = sample_random_hp_configuration(seed, search_mode=search_mode, task_id=openml_task_id, hp_search_done=False)
 
     train_loader, test_loader, X_train_shape, y_train_shape, num_classes = dataloader(
         seed, batch_size=16, openml_task_id=openml_task_id)
+
+    if only_download_dataset:
+        return
 
     input_size = get_layer_shape(X_train_shape)
     output_size = get_layer_shape(y_train_shape)
 
     model = Tabulartrain(input_size, output_size, config)
     model.to(device)
-
-    logging.info(f" (configurations {config}, seed: {seed})...")
 
     model.base_learner_train_save(
         seed=seed,
@@ -322,9 +371,31 @@ if __name__ == '__main__':
         "--seed", type=int, default=1, help="Random generator seed")
     argParser.add_argument(
         "--openml_task_id", type=int, default=233088, help="OpenML task id")
+    argParser.add_argument(
+        "--only_download_dataset", type=bool, default=False,
+        help="Only download the dataset and exit, do not train a base learner")
+    argParser.add_argument(
+        "--search_mode",
+        type=str,
+        # default='hp',
+        required=True,
+        choices=['hp', 'nas']
+    )
     args = argParser.parse_args()
 
-    save_path = f"./saved_model/task_{args.openml_task_id}"
-    Path(save_path).mkdir(exist_ok=True, parents=True)
+    logging.info(f"Starting with args: {args}")
 
-    run_train(args.seed, save_path=save_path, openml_task_id=args.openml_task_id)
+    if args.search_mode == 'nas':
+        save_path = f"./saved_model/task_{args.openml_task_id}_{args.search_mode}"
+        Path(save_path).mkdir(exist_ok=True, parents=True)
+    else:
+        save_path = f"./saved_model/task_{args.openml_task_id}"
+        Path(save_path).mkdir(exist_ok=True, parents=True)
+
+    run_train(
+        seed=args.seed,
+        save_path=save_path,
+        openml_task_id=args.openml_task_id,
+        only_download_dataset=args.only_download_dataset,
+        search_mode=args.search_mode
+    )
