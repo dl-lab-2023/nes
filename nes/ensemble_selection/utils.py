@@ -39,7 +39,7 @@ def make_predictions(models, data_loader, device, num_classes):
         model.eval()
         with torch.no_grad():
             for index, (images, labels) in enumerate(data_loader):
-                images, labels = images.to(device).type(torch.float64), labels.to(device)
+                images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
                 if len(outputs) == 2:
                     # nb201 case
