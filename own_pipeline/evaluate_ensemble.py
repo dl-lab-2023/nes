@@ -23,7 +23,7 @@ def parse_arguments() -> Namespace:
         "--device",
         type=int,
         default=-1,
-        help="Index of GPU device to use. For CPU, set to -1. Default: 0.",
+        help="Index of GPU device to use (e.g. 0). For CPU, set to -1. Default: -1.",
     )
     parser.add_argument(
         "--openml_task_id",
