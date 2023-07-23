@@ -44,7 +44,7 @@ def set_seed_for_random_engines(seed: int, device):
 def get_best_hparam(hp_search_result_dir: str, openml_task_id: int):
     best_accuracy = 0.0
     best_hyperparams = {}
-    path = os.path.join(hp_search_result_dir, f"saved_model/task_{openml_task_id}")
+    path = os.path.join(hp_search_result_dir, f"task_{openml_task_id}")
     logging.info(f"looking for models in {path}")
 
     for root, dirs, files in os.walk(path):
