@@ -22,20 +22,15 @@ def parse_arguments() -> Namespace:
     parser.add_argument(
         "--device",
         type=int,
-        default=0,
+        default=-1,
         help="Index of GPU device to use. For CPU, set to -1. Default: 0.",
     )
     parser.add_argument(
         "--openml_task_id",
         type=int,
     )
-    parser.add_argument(
-        "--ensemble_name",
-        type=str,
-        help="create an ensemble with 'create_ensemble' and pass the name of the .pt file here "
-             "- do not include the '.pt' ending",
-        required=True
-    )
+    parser.add_argument("--ensemble_size",
+                        type=int)
 
     return parser.parse_args()
 
@@ -45,9 +40,8 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
 
     baselearner_dir = f"./saved_model/task_{args.openml_task_id}"
     ensemble_dir = f"./saved_ensembles/task_{args.openml_task_id}"
-    
 
-    id_set: set[int] = torch.load(f"{ensemble_dir}/{args.ensemble_name}.pt")
+    id_set: set[int] = torch.load(f"{ensemble_dir}/ensemble_{args.ensemble_size}_baselearners.pt")
     POOL_NAME = "own_rs"
 
     model_seed_list = [model_seeds(arch=seed, init=seed, scheme=POOL_NAME) for seed in id_set]
@@ -92,10 +86,10 @@ def evaluate_ensemble(ensemble: Ensemble):
 
 def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
     ensemble_statistics_dir = f"./ensemble_stats/task_{args.openml_task_id}"
-    
+
     logging.info("saving...")
     Path(ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)
-    with open(os.path.join(ensemble_statistics_dir, f"{args.ensemble_name}_performance.json"), 'w') as f:
+    with open(os.path.join(ensemble_statistics_dir, f"ensemble_{args.ensemble_size}_baselearners_performance.json"), 'w') as f:
         json.dump({
             "baselearners": list(baselearner_ids),  # set is not serializable
             "evaluation": ensemble.evals,

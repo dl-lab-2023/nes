@@ -56,8 +56,8 @@ def main():
         default="beam_search",
         help="Ensemble selection algorithm. See nes/ensemble_selection/esas.py. Default: beam_search.",
     )
-    parser.add_argument("--M", type=int, default=5,
-                        help="Ensemble size. Default: 5.")
+    parser.add_argument("--ensemble_size",
+                        type=int)
     parser.add_argument(
         "--validation_size",
         type=int,
@@ -97,16 +97,20 @@ def main():
 
     BASELEARNER_DIR = f"./saved_model/task_{args.openml_task_id}"
 
-    pool_keys = POOLS[pool_name]
+    model_ids = POOLS[pool_name]
 
-    pool = {
-        k: load_baselearner(
-            model_id=k,
-            load_nn_module=False,
-            baselearner_dir=BASELEARNER_DIR
-        )
-        for k in pool_keys
-    }
+    pool = {}
+    for model_id in list(model_ids):  # Create a copy of the list to be able to remove items inside the loop
+        try:
+            pool[model_id] = load_baselearner(
+                model_id=model_id,
+                load_nn_module=False,
+                baselearner_dir=BASELEARNER_DIR
+            )
+        except Exception:
+            logging.warn(f"Skipping base learner with id {model_id} due to error", exc_info=True)
+            model_ids.remove(model_id)
+            continue
     logging.info("Loaded baselearners")
 
     for baselearner in pool.values():  # move everything to right device
@@ -129,7 +133,7 @@ def main():
             population = {k: pool[k] for k in pool_ids}
 
             ens_chosen = run_esa(
-                M=args.M, population=population, esa=esa, val_severity=severity,
+                M=args.ensemble_size, population=population, esa=esa, val_severity=severity,
                 validation_size=args.validation_size,
                 diversity_strength=None if args.esa != "beam_search_with_div" else args.diversity_strength
             )
@@ -142,10 +146,10 @@ def main():
             if "weights" in ens_chosen.keys():
                 result_weights[str(severity)].append(ens_chosen['weights'])
 
-        logging.info(f"Done {i + 1}/{len(pools)} for '{pool_name}', M={args.M}, esa={args.esa}, device={device}.")
+        logging.info(f"Done {i + 1}/{len(pools)} for '{pool_name}', M={args.ensemble_size}, esa={args.esa}, device={device}.")
         logging.info(f"Selected model IDs for ensemble: {id_set}")
 
-    torch.save(id_set, os.path.join(ENSEMBLE_SAVE_DIR, f'ensemble_{args.M}_baselearners.pt'))
+    torch.save(id_set, os.path.join(ENSEMBLE_SAVE_DIR, f'ensemble_{args.ensemble_size}_baselearners.pt'))
 
     if args.esa == "beam_search_with_div":
         args.esa = args.esa + f"_{args.diversity_strength}"
@@ -158,9 +162,9 @@ def main():
                    "num_arch_samples": num_arch_samples}
 
     if args.validation_size > -1:
-        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{pool_name}_valsize_{args.validation_size}.pickle"
+        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.ensemble_size}_pool_{pool_name}_valsize_{args.validation_size}.pickle"
     else:
-        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.M}_pool_{pool_name}.pickle"
+        save_name = f"ensembles_chosen__esa_{args.esa}_M_{args.ensemble_size}_pool_{pool_name}.pickle"
 
     with open(
             os.path.join(

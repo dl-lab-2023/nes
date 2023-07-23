@@ -17,11 +17,7 @@ CONDA_BIN=$(ws_find $MOAB_WORKSPACE_NAME)/conda/bin/conda
 CONDA_WORKSPACE_NAME=dl-lab
 
 echo "Started at $(date)"
-
-if [[ -n $MOAB_JOBARRAYINDEX ]]; then
-    echo "Env variable MOAB_JOBARRAYINDEX is set. You are running multiple instances of this script. This is not intended. Aborting."
-    exit 1
-fi
+echo "MOAB_JOBARRAYINDEX (this job id): $MOAB_JOBARRAYINDEX"
 
 cd $(ws_find $MOAB_WORKSPACE_NAME)/nes
 #echo "PWD: $PWD"
@@ -31,6 +27,8 @@ conda activate $CONDA_WORKSPACE_NAME
 #echo Activated conda environment
 
 #echo Running work...
-python -m own_pipeline.evaluate_ensemble --ensemble_dir=saved_ensembles/task_233088 --ensemble_name=ensemble_5_baselearners
+TASK_NUM=$((MOAB_JOBARRAYINDEX + 1)) # Start counting at 1 instead of at 0
+TASK_ID=$(sed "${TASK_NUM}q;d" own_pipeline/task_ids.txt) # Get line with number $TASK_NUM from the text file
+python -m own_pipeline.evaluate_ensemble --openml_task_id $TASK_ID --ensemble_size $ENSEMBLE_SIZE
 
 echo "Finished at $(date)"
