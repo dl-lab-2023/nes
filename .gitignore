@@ -2,6 +2,7 @@ autoPyTorch
 saved_model
 saved_ensembles
 ensemble_statistics
+ensemble_stats
 
 *.pt
 
