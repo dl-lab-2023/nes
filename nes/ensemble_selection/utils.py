@@ -110,10 +110,14 @@ def classif_accuracy(outputs, labels):
     return correct / total
 
 
-def evaluate_predictions(preds_dataset, loss_fn):
+def evaluate_predictions(preds_dataset, lsm_applied=False):
     preds = preds_dataset.tensors[0]
     labels = preds_dataset.tensors[1]
+    
+    if not lsm_applied:
+        preds = preds.log_softmax(1)
 
+    loss_fn = torch.nn.NLLLoss()
     loss = loss_fn(preds, labels)
     acc = classif_accuracy(preds, labels)
     ece = compute_ece(preds, labels)
