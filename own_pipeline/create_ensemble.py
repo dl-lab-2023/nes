@@ -11,6 +11,7 @@ from nes.ensemble_selection.utils import (
 )
 from nes.ensemble_selection.esas import registry as esas_registry
 from own_pipeline.containers.baselearner import load_baselearner, model_seeds
+from own_pipeline.train_baselearners_rs import get_search_mode_appendix
 from own_pipeline.util import enable_logging
 
 
@@ -74,6 +75,12 @@ def main():
         type=int,
         required=True
     )
+    parser.add_argument(
+        "--search_mode",
+        type=str,
+        required=True,
+        choices=['hp', 'nas']
+    )
 
     args = parser.parse_args()
 
@@ -81,7 +88,7 @@ def main():
     if device == "cuda":
         torch.cuda.set_device(device)
 
-    ENSEMBLE_SAVE_DIR = f"./saved_ensembles/task_{args.openml_task_id}"
+    ENSEMBLE_SAVE_DIR = f"./saved_ensembles/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
     Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True, parents=True)
 
     # ===============================
@@ -95,7 +102,7 @@ def main():
 
     # ===============================
 
-    BASELEARNER_DIR = f"./saved_model/task_{args.openml_task_id}"
+    BASELEARNER_DIR = f"./saved_model/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
 
     model_ids = POOLS[pool_name]
 
