@@ -30,7 +30,7 @@ def make_predictions(models, data_loader, device, num_classes):
     num_points = len(data_loader.dataset)
 
     models_predictions = torch.empty(num_points, N, num_classes, device=device)
-    all_labels = torch.empty((num_points, num_classes), dtype=torch.int64, device=device)
+    all_labels = torch.empty(num_points, dtype=torch.int64, device=device)
 
     for n, net in enumerate(models.keys()):
         model = models[net]
@@ -45,7 +45,7 @@ def make_predictions(models, data_loader, device, num_classes):
                 batch_start_index = index * batch_size
                 batch_end_index = min((index + 1) * batch_size, num_points)
 
-                all_labels[batch_start_index:batch_end_index, :] = labels
+                all_labels[batch_start_index:batch_end_index] = labels
                 models_predictions[batch_start_index:batch_end_index, n, :] = outputs
 
         if was_training:
@@ -69,7 +69,6 @@ def compute_ece(preds, labels):
     low_list = bins[:-1]
 
     confidences, predicted = torch.max(preds.exp().data, 1)
-    _, labels = torch.max(labels.data, 1)  # Onehot decode
     accuracies = predicted.eq(labels)
 
     for j, (bin_lower, bin_upper) in enumerate(zip(low_list, up_list)):
@@ -107,7 +106,6 @@ def compute_ece(preds, labels):
 def classif_accuracy(outputs, labels):
     total = labels.size(0)
     _, predicted = torch.max(outputs.data, 1)
-    _, labels = torch.max(labels.data, 1)  # Onehot decode
     correct = (predicted == labels).sum().item()
     return correct / total
 
@@ -116,7 +114,7 @@ def evaluate_predictions(preds_dataset, loss_fn):
     preds = preds_dataset.tensors[0]
     labels = preds_dataset.tensors[1]
 
-    loss = loss_fn(preds, labels.to(torch.float64))
+    loss = loss_fn(preds, labels)
     acc = classif_accuracy(preds, labels)
     ece = compute_ece(preds, labels)
 

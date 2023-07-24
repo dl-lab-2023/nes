@@ -66,6 +66,7 @@ def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result
     :param search_mode: one of 'hp', 'nas'
     """
     cs = ConfigurationSpace({
+        # hpo
         "stochastic_weight_avg": [True, False],
         "look_ahead_optimizer": [True, False],
         "LA_step_size": Float("LA_step_size", bounds=(0.5, 0.8)),
@@ -73,7 +74,7 @@ def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result
         "weight_decay": Float("weight_decay", bounds=(0.00001, 0.1), log=True),
         "learning_rate": Float("learning_rate", bounds=(0.0001, 0.1), log=True),
         "optimizer": ["SGD", "Adam", "AdamW"],
-        "num_epochs": [100],
+        "num_epochs": Integer("num_epochs", bounds=(10, 100)),
         # nas
         "batch_normalization": [True, False],
         "number_of_layers": Integer("number_of_layers", bounds=(2, 8)),
@@ -178,7 +179,6 @@ class Tabulartrain(nn.Module):
             METRICS.error: 1 - evaluation["acc"],
             METRICS.ece: evaluation["ece"],
         }
-        print(f"preds: {preds.tensors[0]}")
         print(f"evaluation: {evaluation}")
         return preds, evaluation
 
@@ -326,7 +326,6 @@ def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
     dataset = FloatTabularDataset(
         X=X_train,
         Y=y_train,
-        num_classes=num_classes,
         X_test=X_test,
         Y_test=y_test,
         validator=input_validator,
