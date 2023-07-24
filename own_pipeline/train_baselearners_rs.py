@@ -130,6 +130,7 @@ class MLP(nn.Module):
         batch_norm = config["batch_normalization"]
 
         self.relu = nn.ReLU()
+        self.softmax = nn.Softmax()
 
         self.hidden_layers = nn.ModuleList()
 
@@ -155,6 +156,7 @@ class MLP(nn.Module):
         for layer in self.hidden_layers:
             x = self.relu(layer(x))
         x = self.fc_out(x)
+        x = self.softmax(x)
         return x
 
 
@@ -188,7 +190,7 @@ class Tabulartrain(nn.Module):
 
         num_epochs = config["num_epochs"]
 
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.NLLLoss()
 
         if optim == 'SGD':
             optimizer = torch.optim.SGD(
