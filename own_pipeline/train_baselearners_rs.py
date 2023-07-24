@@ -89,8 +89,26 @@ def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result
         config["hidden_size"] = 500
         config["hidden_size_adaptation"] = 4
 
-    if search_mode == 'nas':
+    elif search_mode == 'nas':
         best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id)
+        config["stochastic_weight_avg"] = best_hparam["stochastic_weight_avg"]
+        config["look_ahead_optimizer"] = best_hparam["look_ahead_optimizer"]
+        config["LA_step_size"] = best_hparam["LA_step_size"]
+        config["LA_num_steps"] = best_hparam["LA_num_steps"]
+        config["weight_decay"] = best_hparam["weight_decay"]
+        config["learning_rate"] = best_hparam["learning_rate"]
+        config["optimizer"] = best_hparam["optimizer"]
+
+    elif search_mode == 'initweights':
+        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id)
+
+        # HP configs
+        config["batch_normalization"] = best_hparam["batch_normalization"]
+        config["number_of_layers"] = best_hparam["number_of_layers"]
+        config["hidden_size"] = best_hparam["hidden_size"]
+        config["hidden_size_adaptation"] = best_hparam["hidden_size_adaptation"]
+
+        # NAS configs
         config["stochastic_weight_avg"] = best_hparam["stochastic_weight_avg"]
         config["look_ahead_optimizer"] = best_hparam["look_ahead_optimizer"]
         config["LA_step_size"] = best_hparam["LA_step_size"]
@@ -368,6 +386,8 @@ def get_search_mode_appendix(args: argparse.Namespace):
         return '_nas'
     if search_mode == 'hp':
         return ''
+    if search_mode == 'initweights':
+        return '_initweights'
     raise NotImplementedError(search_mode)
 
 
@@ -385,18 +405,21 @@ if __name__ == '__main__':
         "--search_mode",
         type=str,
         required=True,
-        choices=['hp', 'nas']
+        choices=['hp', 'nas', 'initweights']
     )
     argParser.add_argument(
         "--hp_search_result_dir",
         type=str,
         default=None,
         required=False,
-        help="the directory of the hp-search result"
+        help="the directory of the hp-search result."
     )
     args = argParser.parse_args()
 
     logging.info(f"Starting with args: {args}")
+
+    if (args.search_mode == 'nas' or args.search_mode == 'initweights') and not args.hp_search_result_dir:
+        raise ValueError("You need to specify the --hp_search_result_dir parameter for this search mode.")
 
     save_path = f"./saved_model/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
     Path(save_path).mkdir(exist_ok=True, parents=True)
