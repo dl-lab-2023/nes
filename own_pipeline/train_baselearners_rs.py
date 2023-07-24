@@ -179,7 +179,7 @@ class Tabulartrain(nn.Module):
             METRICS.error: 1 - evaluation["acc"],
             METRICS.ece: evaluation["ece"],
         }
-        print(f"evaluation: {evaluation}")
+        logging.info(f"evaluation: {evaluation}")
         return preds, evaluation
 
     def base_learner_train_save(self, seed: int, config: Configuration, train_loader: DataLoader,
