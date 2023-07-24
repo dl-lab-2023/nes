@@ -30,7 +30,7 @@ def make_predictions(models, data_loader, device, num_classes):
     num_points = len(data_loader.dataset)
 
     models_predictions = torch.empty(num_points, N, num_classes, device=device)
-    all_labels = torch.empty(num_points, dtype=torch.int64, device=device)
+    all_labels = torch.empty((num_points, num_classes), dtype=torch.int64, device=device)
 
     for n, net in enumerate(models.keys()):
         model = models[net]
@@ -41,20 +41,15 @@ def make_predictions(models, data_loader, device, num_classes):
             for index, (images, labels) in enumerate(data_loader):
                 images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
-                if len(outputs) == 2:
-                    # nb201 case
-                    outputs = outputs[1]
 
                 batch_start_index = index * batch_size
                 batch_end_index = min((index + 1) * batch_size, num_points)
 
-                all_labels[batch_start_index:batch_end_index] = labels
+                all_labels[batch_start_index:batch_end_index, :] = labels
                 models_predictions[batch_start_index:batch_end_index, n, :] = outputs
 
         if was_training:
             model.train()
-        if N > 1:
-            print("Computed model " + str(net) + " predictions on dataset.")
 
     if got_nn_Module:
         models_predictions = torch.squeeze(models_predictions)
@@ -64,7 +59,7 @@ def make_predictions(models, data_loader, device, num_classes):
 
 
 def compute_ece(preds, labels):
-    resolution = 11 # number of bins 
+    resolution = 11  # number of bins
     total_in_bin = [0 for _ in range(resolution - 1)]
     correct_in_bin = [0 for _ in range(resolution - 1)]
     confidences_in_bin = [[] for _ in range(resolution - 1)]
@@ -74,6 +69,7 @@ def compute_ece(preds, labels):
     low_list = bins[:-1]
 
     confidences, predicted = torch.max(preds.exp().data, 1)
+    _, labels = torch.max(labels.data, 1)  # Onehot decode
     accuracies = predicted.eq(labels)
 
     for j, (bin_lower, bin_upper) in enumerate(zip(low_list, up_list)):
@@ -111,20 +107,16 @@ def compute_ece(preds, labels):
 def classif_accuracy(outputs, labels):
     total = labels.size(0)
     _, predicted = torch.max(outputs.data, 1)
+    _, labels = torch.max(labels.data, 1)  # Onehot decode
     correct = (predicted == labels).sum().item()
     return correct / total
 
 
-def evaluate_predictions(preds_dataset, lsm_applied=False):
-    nll = nn.NLLLoss()
-
+def evaluate_predictions(preds_dataset, loss_fn):
     preds = preds_dataset.tensors[0]
     labels = preds_dataset.tensors[1]
 
-    if not lsm_applied:
-        preds = preds.log_softmax(1)
-
-    loss = nll(preds, labels)
+    loss = loss_fn(preds, labels.to(torch.float64))
     acc = classif_accuracy(preds, labels)
     ece = compute_ece(preds, labels)
 
@@ -148,11 +140,11 @@ def form_ensemble_pred(
             )
         # import ipdb; ipdb.set_trace()
         if bsl_weights is None:
-            avg_output = torch.mean(all_outputs, dim=1) # simple unweighted average
+            avg_output = torch.mean(all_outputs, dim=1)  # simple unweighted average
         else:
-            #print(bsl_weights.sum())
+            # print(bsl_weights.sum())
             assert bsl_weights.shape == (len(models_preds_tensors),)
-            #assert bsl_weights.sum() == 1, "Weights don't sum to one."
+            # assert bsl_weights.sum() == 1, "Weights don't sum to one."
             avg_output = torch.matmul(bsl_weights.unsqueeze(0), all_outputs).squeeze(1)
 
         return avg_output.log()
@@ -371,5 +363,3 @@ def get_dataloaders_and_classes(dataset, device, nb201, n_datapoints):
         num_classes = 100 if dataset == 'cifar100' else 10
 
     return dataloaders, num_classes
-
-

@@ -166,6 +166,20 @@ class Tabulartrain(nn.Module):
     def forward(self, x):
         self.model.forward(x)
 
+    def evaluate(self, prediction_model, test_loader, device, num_classes, loss_fn):
+        logging.info("Evaluating on test dataset...")
+        preds = make_predictions(prediction_model, test_loader, device, num_classes)
+        evaluation = evaluate_predictions(preds, loss_fn)
+        evaluation = {
+            METRICS.loss: evaluation["loss"],
+            METRICS.accuracy: evaluation["acc"],
+            METRICS.error: 1 - evaluation["acc"],
+            METRICS.ece: evaluation["ece"],
+        }
+        print(f"preds: {preds.tensors[0]}")
+        print(f"evaluation: {evaluation}")
+        return preds, evaluation
+
     def base_learner_train_save(self, seed: int, config: Configuration, train_loader: DataLoader,
                                 test_loader: DataLoader, save_path: str, device: torch.device, num_classes: int):
         learning_rate = config["learning_rate"]
@@ -174,7 +188,7 @@ class Tabulartrain(nn.Module):
 
         num_epochs = config["num_epochs"]
 
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = nn.CrossEntropyLoss()
 
         if optim == 'SGD':
             optimizer = torch.optim.SGD(
@@ -206,7 +220,6 @@ class Tabulartrain(nn.Module):
             for i, (data, labels) in enumerate(train_loader):
                 data = data.to(device)
                 labels = labels.to(device)
-                labels = torch.unsqueeze(labels, 1)
 
                 outputs = self.model(data)
                 loss = criterion(outputs, labels)
@@ -223,6 +236,9 @@ class Tabulartrain(nn.Module):
                 if config["stochastic_weight_avg"] and epoch > swa_start:
                     swa_model.update_parameters(self.model)
                     swa_scheduler.step()
+
+            if epoch % 10 == 0:
+                self.evaluate(self.model, test_loader, device, num_classes, criterion)
 
         if config["stochastic_weight_avg"]:
             torch.optim.swa_utils.update_bn(train_loader, swa_model)
@@ -242,14 +258,7 @@ class Tabulartrain(nn.Module):
         if config["stochastic_weight_avg"]:
             prediction_model = swa_model
 
-        preds = make_predictions(prediction_model, test_loader, device, num_classes)
-        evaluation = evaluate_predictions(preds)
-        evaluation = {
-            METRICS.loss: evaluation["loss"],
-            METRICS.accuracy: evaluation["acc"],
-            METRICS.error: 1 - evaluation["acc"],
-            METRICS.ece: evaluation["ece"],
-        }
+        preds, evaluation = self.evaluate(prediction_model, test_loader, device, num_classes, criterion)
         torch.save(
             {"preds": preds, "evals": evaluation},
             os.path.join(model_save_dir, "preds_evals.pt"),
@@ -315,6 +324,7 @@ def dataloader(seed, batch_size, openml_task_id, test_size: float = 0.2):
     dataset = FloatTabularDataset(
         X=X_train,
         Y=y_train,
+        num_classes=num_classes,
         X_test=X_test,
         Y_test=y_test,
         validator=input_validator,
@@ -364,7 +374,7 @@ def run_train(seed: int, save_path: str, openml_task_id: int, only_download_data
         return
 
     input_size = get_layer_shape(X_train_shape)
-    output_size = get_layer_shape(y_train_shape)
+    output_size = num_classes
 
     model = Tabulartrain(input_size, output_size, config)
     model.to(device)
