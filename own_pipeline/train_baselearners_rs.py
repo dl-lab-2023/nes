@@ -396,7 +396,7 @@ def get_search_mode_appendix(args: argparse.Namespace):
     if search_mode == 'nas':
         return '_nas'
     if search_mode == 'hp':
-        return ''
+        return '_hp'
     if search_mode == 'initweights':
         return '_initweights'
     raise NotImplementedError(search_mode)
