@@ -11,7 +11,7 @@ if [ $# -ne 1 ]; then
 fi
 
 moab_logs_directory_path="$1"
-search_string="ERROR processing the task"
+search_string="Finished at " # Will only be logged when 1) the cluster job didn't time out, and 2) the job was sucessful ("set -e" is included in each cluster script)
 
 # Check if the specified directory exists
 if [ ! -d "$moab_logs_directory_path" ]; then
@@ -41,7 +41,7 @@ else
   percentage_with_occurrence=0
 fi
 
-echo "Number of arrayjobs that failed: $files_with_occurrence"
+echo "Number of arrayjobs that were successful: $files_with_occurrence"
 echo "Total number of arrayjobs: $total_files"
-echo "Percentage of SUCCESSFUL arrayjobs: $((100-$percentage_with_occurrence))%"
-echo "Percentage of FAILED arrayjobs: $percentage_with_occurrence%"
+echo "Percentage of SUCCESSFUL arrayjobs: $percentage_with_occurrence%"
+echo "Percentage of FAILED arrayjobs: $((100-$percentage_with_occurrence))%"
