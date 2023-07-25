@@ -9,7 +9,7 @@ def box_plot_accuracy(args: Namespace, stats: dict):
     for method in stats.keys():
         all_data = []
         for task in stats[method].keys():
-            all_data.append(stats[method][task])
+            all_data.append(stats[method][task] * 100)
         data[method] = all_data
 
     fig = plt.figure(dpi=args.dpi, figsize=(20, 10))
