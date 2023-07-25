@@ -41,10 +41,15 @@ def set_seed_for_random_engines(seed: int, device):
         torch.backends.cudnn.benchmark = False
 
 
-def get_best_hparam(hp_search_result_dir: str, openml_task_id: int):
+
+def get_best_hparam(hp_search_result_dir: str, openml_task_id: int, search_mode:str):
     best_accuracy = 0.0
     best_hyperparams = {}
-    path = os.path.join(hp_search_result_dir, f"task_{openml_task_id}")
+    optim_path = os.path.join(hp_search_result_dir, f"task_{openml_task_id}")
+    if os.path.exists(optim_path + "_hp") and search_mode == 'nas':
+        path = os.path.join(hp_search_result_dir, f"task_{openml_task_id}_hp")
+    if os.path.exists(optim_path + "_nas") and search_mode == 'initweights':
+        path = os.path.join(hp_search_result_dir, f"task_{openml_task_id}_nas")
     logging.info(f"looking for models in {path}")
 
     for root, dirs, files in os.walk(path):
@@ -91,7 +96,8 @@ def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result
         config["hidden_size_adaptation"] = 4
 
     elif search_mode == 'nas':
-        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id)
+        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id, search_mode)
+        config["num_epochs"] = best_hparam["num_epochs"]
         config["stochastic_weight_avg"] = best_hparam["stochastic_weight_avg"]
         config["look_ahead_optimizer"] = best_hparam["look_ahead_optimizer"]
         config["LA_step_size"] = best_hparam["LA_step_size"]
@@ -101,7 +107,9 @@ def sample_random_hp_configuration(seed: int, search_mode: str, hp_search_result
         config["optimizer"] = best_hparam["optimizer"]
 
     elif search_mode == 'initweights':
-        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id)
+        best_hparam = get_best_hparam(hp_search_result_dir, openml_task_id, search_mode)
+
+        config["num_epochs"] = best_hparam["num_epochs"]
 
         # HP configs
         config["batch_normalization"] = best_hparam["batch_normalization"]
