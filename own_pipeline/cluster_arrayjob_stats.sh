@@ -29,6 +29,8 @@ for file in "$moab_logs_directory_path"/*; do
       # Use grep to search for the string in the file
       if grep -i -q "$search_string" "$file"; then
         ((files_with_occurrence++))
+      else
+        echo Failed job: $file
       fi
     fi
   fi
@@ -41,6 +43,7 @@ else
   percentage_with_occurrence=0
 fi
 
+echo ""
 echo "Number of arrayjobs that were successful: $files_with_occurrence"
 echo "Total number of arrayjobs: $total_files"
 echo "Percentage of SUCCESSFUL arrayjobs: $percentage_with_occurrence%"
