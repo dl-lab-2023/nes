@@ -4,6 +4,7 @@ from argparse import ArgumentParser, Namespace
 import re
 from pathlib import Path
 
+import matplotlib
 import matplotlib.pyplot as plt
 
 from own_pipeline.util import enable_logging
@@ -43,17 +44,25 @@ def create_ranking_bar_plot(args: Namespace):
         rank[best_mode] += 1
 
     # create plotting
-    fig = plt.figure(dpi=args.dpi)
-    plt.title('Ranking of different Methods')
+    fig = plt.figure(dpi=args.dpi, figsize=(12.8, 9.6))
+    plt.title('Ranking of different Methods', x=0.4)
+
     x = range(len(rank.keys()))
     bar_colors = ['tab:red', 'tab:purple', 'tab:blue', 'tab:green', 'tab:orange']
-    plt.bar(x, rank.values(), label=rank.keys(), color=bar_colors)
-    plt.ylabel('Rank')
-    plt.xlabel('Methods')
-    plt.legend()
+    plt.barh(x, rank.values(), color=bar_colors)
+    plt.xticks(range(max(rank.values()) + 1))
+    plt.yticks(range(len(rank.keys())), labels=rank.keys())
+    plt.xlabel('Rank')
+
     plt.tight_layout()
     save_path = os.path.join(args.save_path, "ranking_bar_plot.jpg")
     fig.savefig(save_path, dpi=fig.dpi)
+
+
+def setup(args: Namespace):
+    Path(args.save_path).mkdir(exist_ok=True, parents=True)
+    plt.rcParams.update({'font.size': 30})
+    plt.rcParams.update({'axes.titlesize': 50})
 
 
 if __name__ == '__main__':
@@ -71,10 +80,10 @@ if __name__ == '__main__':
     )
     argParser.add_argument(
         "--dpi", type=int,
-        default=200,
+        default=400,
         help='dpi used for plots'
     )
     args = argParser.parse_args()
 
-    Path(args.save_path).mkdir(exist_ok=True, parents=True)
+    setup(args)
     create_ranking_bar_plot(args)
