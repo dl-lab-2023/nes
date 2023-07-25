@@ -35,7 +35,8 @@ def create_ranking_bar_plot(args: Namespace, acc_stats: dict):
     x = range(len(rank.keys()))
     bar_colors = ['tab:orange', 'tab:red', 'tab:purple', 'tab:blue', 'tab:green', 'tab:olive']
     plt.bar(x, rank_percentage.values(), color=bar_colors)
-    plt.xticks(range(len(rank.keys())), labels=rank.keys())
+    labels = [l.replace('-', '\n') for l in rank.keys()]
+    plt.xticks(range(len(rank.keys())), labels=labels)
     plt.ylabel('% of datasets the method\nhad the best accuracy')
 
     plt.tight_layout()

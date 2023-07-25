@@ -13,7 +13,7 @@ def box_plot_accuracy(args: Namespace, stats: dict):
         data[method] = all_data
 
     fig = plt.figure(dpi=args.dpi, figsize=(20, 10))
-    plt.title("Accuracy of Ensembles")
+    plt.title("Accuracy of Methods")
     box_plot_data = [data[s] for s in data.keys()]
     bplot = plt.boxplot(
         box_plot_data,
@@ -29,8 +29,9 @@ def box_plot_accuracy(args: Namespace, stats: dict):
     colors = ['tab:orange', 'tab:red', 'tab:purple', 'tab:blue', 'tab:green', 'tab:olive']
     for patch, color in zip(bplot['boxes'], colors):
         patch.set_facecolor(color)
-    plt.ylabel("percentage points")
-    plt.xticks(range(2, (len(data.keys()) + 1) * 2, 2), labels=data.keys())
+    plt.ylabel("Accuracy in %")
+    labels = [l.replace('-', '\n') for l in data.keys()]
+    plt.xticks(range(2, (len(data.keys()) + 1) * 2, 2), labels=labels)
     plt.tight_layout()
     save_path = os.path.join(args.save_path, "box_plot_accuracy.jpg")
     fig.savefig(save_path, dpi=fig.dpi)
