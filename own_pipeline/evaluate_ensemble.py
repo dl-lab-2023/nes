@@ -31,6 +31,18 @@ def parse_arguments() -> Namespace:
         required=True,
         choices=['hp', 'nas', 'initweights']
     )
+    parser.add_argument(
+        "--ensembles_in_dir",
+        type=str,
+        required=False,
+        default="saved_ensembles"
+    )
+    parser.add_argument(
+        "--ensembles_in_dir_subdir_suffix",
+        type=str,
+        required=False,
+        default=""
+    )
 
     return parser.parse_args()
 
@@ -39,7 +51,7 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
     logging.info("loading baselearners...")
 
     baselearner_dir = f"./saved_model/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
-    ensemble_dir = f"./saved_ensembles/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
+    ensemble_dir = f"./{args.ensembles_in_dir}/task_{args.openml_task_id}{get_search_mode_appendix(args)}{args.ensembles_in_dir_subdir_suffix}"
 
     id_set: set[int] = torch.load(f"{ensemble_dir}/ensemble_{args.ensemble_size}_baselearners.pt")
     POOL_NAME = "own_rs"

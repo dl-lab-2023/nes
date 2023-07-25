@@ -81,6 +81,18 @@ def main():
         required=True,
         choices=['hp', 'nas', 'initweights']
     )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        required=False,
+        default="saved_ensembles"
+    )
+    parser.add_argument(
+        "--out_dir_subdir_suffix",
+        type=str,
+        required=False,
+        default=""
+    )
 
     args = parser.parse_args()
 
@@ -88,7 +100,7 @@ def main():
     if device == "cuda":
         torch.cuda.set_device(device)
 
-    ENSEMBLE_SAVE_DIR = f"./saved_ensembles/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
+    ENSEMBLE_SAVE_DIR = f"./{args.out_dir}/task_{args.openml_task_id}{get_search_mode_appendix(args)}{args.out_dir_subdir_suffix}"
     Path(ENSEMBLE_SAVE_DIR).mkdir(exist_ok=True, parents=True)
 
     # ===============================
