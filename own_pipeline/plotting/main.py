@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
 from own_pipeline.plotting.box_plot_accuracy import box_plot_accuracy
+from own_pipeline.plotting.create_fig_6 import create_fig_6
 from own_pipeline.plotting.create_ranking_bar_plot import create_ranking_bar_plot
 from own_pipeline.plotting.shared import setup, load_acc_stats
 from own_pipeline.util import enable_logging
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     )
     argParser.add_argument(
         "--dpi", type=int,
-        default=400,
+        default=1000,
         help='dpi used for plots'
     )
     argParser.add_argument(
@@ -47,9 +48,18 @@ if __name__ == '__main__':
         default="/home/jonas/workspace/nes/own_pipeline/plotting/plots/ensemble_stats.json",
         help="pass absolute path of cluster-json"
     )
+    argParser.add_argument(
+        "--multi_ensemble_dir", type=str,
+        default="/home/jonas/workspace/nes/ensemble_stats"
+    )
+    argParser.add_argument(
+        "--taskid", type=int,
+        default=233088
+    )
     args = argParser.parse_args()
 
     setup(args)
     stats = load_acc_stats(args)
     box_plot_accuracy(args, stats)
     create_ranking_bar_plot(args, stats)
+    create_fig_6(args)
