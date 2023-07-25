@@ -1,8 +1,8 @@
 from argparse import ArgumentParser
 
+from own_pipeline.plotting.box_plot_accuracy import box_plot_accuracy
 from own_pipeline.plotting.box_plot_ensemble_improving_over_avg_baselearner import \
     box_plot_ensemble_improving_over_avg_baselearner
-from own_pipeline.plotting.create_ranking_bar_plot import create_ranking_bar_plot
 from own_pipeline.plotting.shared import setup
 from own_pipeline.util import enable_logging
 
@@ -15,8 +15,8 @@ if __name__ == '__main__':
         help='absolute path to ensemble_stats, e.g. "/workspace/nes/ensemble_stats"'
     )
     argParser.add_argument(
-        "--saved_model", type=str,
-        default='/home/jonas/workspace/nes/own_pipeline/saved_model',
+        "--saved_model_path", type=str,
+        default='/home/jonas/workspace/nes/saved_model',
         help='absolute path to saved_model, e.g. "/workspace/nes/saved_model"'
     )
     argParser.add_argument(
@@ -51,5 +51,5 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     setup(args)
-    create_ranking_bar_plot(args)
     box_plot_ensemble_improving_over_avg_baselearner(args)
+    box_plot_accuracy(args)
