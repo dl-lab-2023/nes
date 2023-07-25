@@ -28,7 +28,6 @@ def create_ranking_bar_plot(args: Namespace):
     x = range(len(rank.keys()))
     bar_colors = ['tab:red', 'tab:purple', 'tab:blue', 'tab:green', 'tab:orange']
     plt.barh(x, rank.values(), color=bar_colors)
-    plt.xticks(range(max(rank.values()) + 1))
     plt.yticks(range(len(rank.keys())), labels=rank.keys())
     plt.xlabel('Rank')
 
