@@ -3,13 +3,8 @@ from argparse import Namespace
 
 from matplotlib import pyplot as plt
 
-from own_pipeline.plotting.shared import load_acc_stats
 
-
-def box_plot_accuracy(args: Namespace):
-    stats = load_acc_stats(args)
-
-    # save acc_ensemble - acc_avg_baselearner in dict for each search_mode
+def box_plot_accuracy(args: Namespace, stats: dict):
     data = {}
     for method in stats.keys():
         all_data = []

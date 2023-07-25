@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
 
 from own_pipeline.plotting.box_plot_accuracy import box_plot_accuracy
-from own_pipeline.plotting.shared import setup
+from own_pipeline.plotting.create_ranking_bar_plot import create_ranking_bar_plot
+from own_pipeline.plotting.shared import setup, load_acc_stats
 from own_pipeline.util import enable_logging
 
 if __name__ == '__main__':
@@ -49,4 +50,6 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     setup(args)
-    box_plot_accuracy(args)
+    stats = load_acc_stats(args)
+    box_plot_accuracy(args, stats)
+    create_ranking_bar_plot(args, stats)

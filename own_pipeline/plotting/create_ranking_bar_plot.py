@@ -3,19 +3,22 @@ from argparse import Namespace
 
 import matplotlib.pyplot as plt
 
-from own_pipeline.plotting.shared import load_ensemble_stats
 
+def create_ranking_bar_plot(args: Namespace, acc_stats: dict):
+    # swap directory-dimensions
+    data = {}
+    for method in acc_stats.keys():
+        for taskid in acc_stats[method].keys():
+            if taskid not in data:
+                data[taskid] = {}
+            data[taskid][method] = acc_stats[method][taskid]
 
-def create_ranking_bar_plot(args: Namespace):
-    ensemble_stats = load_ensemble_stats(args)
-
-    # create ranking
-    rank = {search_mode: 0 for search_mode in args.search_modes}
-    for taskid in ensemble_stats.keys():
+    rank = {method: 0 for method in acc_stats.keys()}
+    for taskid in data.keys():
         best_acc = 0
         best_mode = ''
-        for search_mode in ensemble_stats[taskid].keys():
-            acc = ensemble_stats[taskid][search_mode]['evaluation']['acc']
+        for search_mode in data[taskid].keys():
+            acc = data[taskid][search_mode]
             if acc > best_acc:
                 best_acc = acc
                 best_mode = search_mode
@@ -23,10 +26,10 @@ def create_ranking_bar_plot(args: Namespace):
 
     # create plotting
     fig = plt.figure(dpi=args.dpi, figsize=(12.8, 9.6))
-    plt.title('Ranking of different Methods', x=0.4)
+    plt.title('Ranking of Methods', x=0.4)
 
     x = range(len(rank.keys()))
-    bar_colors = ['tab:red', 'tab:purple', 'tab:blue', 'tab:green', 'tab:orange']
+    bar_colors = ['tab:orange', 'tab:red', 'tab:purple', 'tab:blue', 'tab:green']
     plt.barh(x, rank.values(), color=bar_colors)
     plt.yticks(range(len(rank.keys())), labels=rank.keys())
     plt.xlabel('Rank')
