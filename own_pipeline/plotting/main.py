@@ -1,8 +1,6 @@
 from argparse import ArgumentParser
 
 from own_pipeline.plotting.box_plot_accuracy import box_plot_accuracy
-from own_pipeline.plotting.box_plot_ensemble_improving_over_avg_baselearner import \
-    box_plot_ensemble_improving_over_avg_baselearner
 from own_pipeline.plotting.shared import setup
 from own_pipeline.util import enable_logging
 
@@ -51,5 +49,4 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     setup(args)
-    box_plot_ensemble_improving_over_avg_baselearner(args)
     box_plot_accuracy(args)

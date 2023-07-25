@@ -13,7 +13,7 @@ def setup(args: Namespace):
     plt.rcParams.update({'axes.titlesize': 50})
 
 
-def load_stats(args: Namespace) -> dict[int, [dict[str, dict]]]:
+def load_acc_stats(args: Namespace) -> dict[int, [dict[str, dict]]]:
     """
     usage: load_ensemble_stats(args)["hp-ensemble"][220338"]
     :param args: used for args.ensemble_stats_path
@@ -61,5 +61,5 @@ def _load_ensemble_stats_json(args: Namespace):
             appendix = f"{appendix}-ensemble"
             if appendix not in ensembles_by_method_and_taskid.keys():
                 ensembles_by_method_and_taskid[appendix] = {}
-            ensembles_by_method_and_taskid[appendix][taskid] = data[key]
+            ensembles_by_method_and_taskid[appendix][taskid] = data[key]['evaluation']['acc']
     return ensembles_by_method_and_taskid
