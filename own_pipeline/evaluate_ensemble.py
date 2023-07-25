@@ -29,7 +29,7 @@ def parse_arguments() -> Namespace:
         "--search_mode",
         type=str,
         required=True,
-        choices=['hp', 'nas']
+        choices=['hp', 'nas', 'initweights']
     )
 
     return parser.parse_args()

@@ -79,7 +79,7 @@ def main():
         "--search_mode",
         type=str,
         required=True,
-        choices=['hp', 'nas']
+        choices=['hp', 'nas', 'initweights']
     )
 
     args = parser.parse_args()
