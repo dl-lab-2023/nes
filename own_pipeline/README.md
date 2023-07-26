@@ -22,7 +22,60 @@ We used Python 3.9 and please check `requirements.txt` for our torch version and
 
 ## Running the experiments
 
-The structure for running the random Neural Ensemble Search consists of three steps: train the base learners, apply ensemble selection and evaluate the final ensembles. We perform these steps 3 times, we first train on random Hyperparameters but fixed architecture, then we train on the best hyperparameter config from the previous step on a random NAS search method, after which we apply this method on the best architecture and hyperparameter configuration obtained from the previous steps with different weight initialization. We ensemble each result and we visualize with out plotting functions.
+The structure for running the random Neural Ensemble Search consists of three steps: train the base learners, apply ensemble selection and evaluate the final ensembles. We perform these steps 3 times, we first train on random Hyperparameters but fixed architecture, then we train on the best hyperparameter config from the previous step on a random NAS search method, after which we apply this method on the best architecture and hyperparameter configuration obtained from the previous steps with different weight initialization. We ensemble each result and we visualize the results with plotting functions.
 
-### Running NES
+Instructions for running on a cluster with the MOAB cluster manager, e.g., Nemo:
 
+### Step 1: NES-RS for HPO
+
+1. Train base learners:
+
+    `$ msub -t 0-9249 -v NUM_SEEDS_PER_TASK=250 -l walltime=4:00:00 ../own_pipeline/cluster_train_baselearners_rs_hp.sh`
+
+2. Create ensemble:
+
+    `$ msub -t 0-36 -v MAX_SEED=250 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_create_ensemble_hp.sh`
+
+3. Evaluate ensemble:
+
+    `$ msub -t 0-36 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_eval_ensemble_hp.sh`
+
+### Step 2: NES-RS for NAS
+
+1. Train base learners:
+
+    `$ msub -t 0-9249 -v NUM_SEEDS_PER_TASK=250 -l walltime=4:00:00 ../own_pipeline/cluster_train_baselearners_rs_nas.sh`
+
+2. Create ensemble:
+
+    `$ msub -t 0-36 -v MAX_SEED=250 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_create_ensemble_nas.sh`
+
+3. Evaluate ensemble:
+
+    `$ msub -t 0-36 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_eval_ensemble_nas.sh`
+
+### Step 3: NES-RS for different model weight initializations (MWIs)
+
+1. Train base learners:
+
+    `$ msub -t 0-9249 -v NUM_SEEDS_PER_TASK=250 -l walltime=4:00:00 ../own_pipeline/cluster_train_baselearners_rs_initweights.sh`
+
+2. Create ensemble:
+
+    `$ msub -t 0-36 -v MAX_SEED=250 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_create_ensemble_initweights.sh`
+
+3. Evaluate ensemble:
+
+    `$ msub -t 0-36 -v ENSEMBLE_SIZE=20 -l walltime=4:00:00 ../own_pipeline/cluster_eval_ensemble_initweights.sh`
+
+### Step 4: Analyze ensemble accuracy based on the number of base learners considered for ensemble building
+
+For each dataset (=task id), run the following command. Please replace the task id `233091` in this example with the task id that should be evaluated.
+
+`$ msub -t 0-12 -v TASK_ID=233091 -l walltime=4:00:00 ../../own_pipeline/cluster_create_multi_ensemble.sh`
+
+### Step 5: Generate plots
+
+For each dataset (=task id), run the following command. Please replace the task id `233091` in this example with the task id that should be evaluated.
+
+`$ python -m own_pipeline.plotting.main --ensemble_stats_path ensemble_stats/ --saved_model_path saved_model/ --save_path plots/ --load_cluster_json_path ensemble_stats/ensemble_stats.json --multi_ensemble_stats_dir multi_ensemble_stats/ --taskid 233091`
