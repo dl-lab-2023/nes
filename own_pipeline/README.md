@@ -1,4 +1,4 @@
-# Base Learners vs. Ensembles for Tabular Datasets: Comparing HPO, NAS, and different Weight Initializations with Random Searc
+# Base Learners vs. Ensembles for Tabular Datasets: Comparing HPO, NAS, and different Weight Initializations with Random Search
 
 ## Introduction
 This repo contains the code accompanying the paper:
