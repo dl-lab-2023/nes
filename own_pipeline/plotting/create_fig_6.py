@@ -17,7 +17,7 @@ def color(method: str) -> str:
 
 
 def create_fig_6(args: Namespace):
-    path = args.multi_ensemble_dir
+    path = args.multi_ensemble_stats_dir
     taskid = args.taskid
 
     evaluations = {}
@@ -28,6 +28,7 @@ def create_fig_6(args: Namespace):
                 method = root.split('_')[-2]
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r') as json_file:
+                    print(f"loading file {json_file}")
                     data = json.load(json_file)
                 if num_baselearners not in evaluations:
                     evaluations[num_baselearners] = {}

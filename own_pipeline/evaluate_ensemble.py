@@ -74,7 +74,7 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
 
 def load_ensemble(args: Namespace, baselearners: List[Baselearner]) -> Ensemble:
     logging.info("loading ensemble...")
-    return Ensemble(baselearners, bsl_weights=None) 
+    return Ensemble(baselearners, bsl_weights=None)
 
 
 def evaluate_ensemble(ensemble: Ensemble):
@@ -98,7 +98,11 @@ def evaluate_ensemble(ensemble: Ensemble):
 
 
 def save_data(args: Namespace, ensemble: Ensemble, baselearner_ids: set[int]):
-    ensemble_statistics_dir = f"./ensemble_stats/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
+    if len(args.ensembles_in_dir_subdir_suffix):
+        ensemble_statistics_dir = f"./multi_ensemble_stats/task_{args.openml_task_id}{get_search_mode_appendix(args)}{args.ensembles_in_dir_subdir_suffix}"
+    else:
+        ensemble_statistics_dir = f"./ensemble_stats/task_{args.openml_task_id}{get_search_mode_appendix(args)}"
+    print(f"Saving to: {ensemble_statistics_dir}")
 
     logging.info("saving...")
     Path(ensemble_statistics_dir).mkdir(exist_ok=True, parents=True)

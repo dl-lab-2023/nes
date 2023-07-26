@@ -49,8 +49,8 @@ if __name__ == '__main__':
         help="pass absolute path of cluster-json"
     )
     argParser.add_argument(
-        "--multi_ensemble_dir", type=str,
-        default="/home/jonas/workspace/nes/ensemble_stats"
+        "--multi_ensemble_stats_dir", type=str,
+        default="/home/jonas/workspace/nes/multi_ensemble_stats"
     )
     argParser.add_argument(
         "--taskid", type=int,
@@ -59,7 +59,15 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     setup(args)
+
+    print("load_acc_stats")
     stats = load_acc_stats(args)
+
+    print("box_plot_accuracy")
     box_plot_accuracy(args, stats)
+
+    print("create_ranking_bar_plot")
     create_ranking_bar_plot(args, stats)
+
+    print("create_fig_6")
     create_fig_6(args)
