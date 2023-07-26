@@ -43,14 +43,14 @@ def create_fig_6(args: Namespace):
             if method not in y_data:
                 y_data[method] = {"acc": [], "err1": [], "err2": []}
             acc = evaluations[num_baselearners][method]["evaluation"]["acc"] * 100
-            err = evaluations[num_baselearners][method]["evaluation"]["ece"]
+            err = evaluations[num_baselearners][method]["evaluation"]["ece"] * 100
             y_data[method]["acc"].append(acc)
             y_data[method]["err1"].append(acc + err)
             y_data[method]["err2"].append(acc - err)
     fig = plt.figure(dpi=args.dpi, figsize=(13, 7))
     for method in y_data.keys():
         plt.plot(x, y_data[method]["acc"], 'o-', linewidth=4, label=name(method), color=color(method))
-        # plt.fill_between(x, y_data[method]["err1"], y_data[method]["err2"], color=color(method), alpha=0.1)
+        plt.fill_between(x, y_data[method]["err1"], y_data[method]["err2"], color=color(method), alpha=0.1)
 
     plt.title(f"Dataset openml-{taskid}")
     plt.legend()
