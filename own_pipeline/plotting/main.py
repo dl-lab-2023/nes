@@ -69,5 +69,5 @@ if __name__ == '__main__':
     print("create_ranking_bar_plot")
     create_ranking_bar_plot(args, stats)
 
-    print("create_fig_6")
-    create_fig_6(args)
+    # print("create_fig_6")
+    # create_fig_6(args)
