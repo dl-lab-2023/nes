@@ -2,16 +2,12 @@
 
 ## Introduction
 This repo contains the code accompanying the paper:
-
 [Neural Ensemble Search for Uncertainty Estimation and Dataset Shift](https://arxiv.org/abs/2006.08573)
-
-Authors: Sheheryar Zaidi*, Arber Zela*, Thomas Elsken, Chris Holmes, Frank Hutter and Yee Whye Teh.
+(Authors: Sheheryar Zaidi*, Arber Zela*, Thomas Elsken, Chris Holmes, Frank Hutter and Yee Whye Teh.)
 
 The project is used to extend and try these ensembling techniques on tabular dataset that are used in this paper:
-
 [Well-tuned Simple Nets Excel on Tabular Datasets](https://arxiv.org/pdf/2106.11189)
-
-Authors: Arlind Kadra, Marius Lindauer, Frank Hutter, Josif Grabocka
+(Authors: Arlind Kadra, Marius Lindauer, Frank Hutter, Josif Grabocka)
 
 ## Setting up virtual environment
 

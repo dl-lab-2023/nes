@@ -1,5 +1,11 @@
 # Neural Ensemble Search
 
+## Note regarding the Deep Learning Lab at the University of Freiburg, summer term 2023
+
+The code of this paper has been extended in scope of the Deep Learning Lab at the University of Freiburg, in the summer term 2023.
+
+For information regarding this, please see the `./own_pipeline/` directory and the contained [README.md](own_pipeline/README.md) file.
+
 ## Introduction
 This repo contains the code accompanying the paper:
 
