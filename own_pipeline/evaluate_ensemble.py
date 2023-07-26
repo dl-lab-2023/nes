@@ -62,7 +62,7 @@ def load_baselearners(args: Namespace) -> Tuple[set[int], List[Baselearner]]:
 
 def load_ensemble(args: Namespace, baselearners: List[Baselearner]) -> Ensemble:
     logging.info("loading ensemble...")
-    return Ensemble(baselearners, bsl_weights=None)  # TODO bsl_weights?
+    return Ensemble(baselearners, bsl_weights=None) 
 
 
 def evaluate_ensemble(ensemble: Ensemble):
