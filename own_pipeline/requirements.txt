@@ -1,4 +1,4 @@
-# Python Version: 3.11.4 - should work with 3.9+
+# Python Version: 3.9
 
 configspace==0.7.1
 torch==2.0.1
@@ -12,3 +12,4 @@ autoPyTorch==0.2.1 # autopytorch requires swig (apt-get install swig) https://gi
 tqdm==2.2.3
 wand==0.6.11
 dill==0.3.6
+matplotlib==3.7.2
