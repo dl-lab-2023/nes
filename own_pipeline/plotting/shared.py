@@ -27,7 +27,19 @@ def load_acc_stats(args: Namespace) -> dict[int, [dict[str, dict]]]:
         combined_dict[key] = ensembles[key]
     for key in baselearners.keys():
         combined_dict[key] = baselearners[key]
+    # sort dict by keys
+    keys = ['HPO-BaseLearner', 'HPO-Ensemble', 'NAS-BaseLearner', 'NAS-Ensemble', 'MWI-BaseLearner', 'MWI-Ensemble']
+    combined_dict = {i: combined_dict[i] for i in keys}
     return combined_dict
+
+
+def name(appendix: str):
+    if appendix == 'hp':
+        return 'HPO'
+    if appendix == 'nas':
+        return 'NAS'
+    if appendix == 'initweights':
+        return 'MWI'
 
 
 def _load_best_baselearners_from_filesystem(args: Namespace):
@@ -39,7 +51,7 @@ def _load_best_baselearners_from_filesystem(args: Namespace):
                 continue
             taskid = int(re.findall(r'\d+', root)[-2])  # last is seed
             appendix = root.split("/")[-2].replace(f'task_{taskid}_', '')
-            appendix = f"{appendix}-baselearner"
+            appendix = f"{name(appendix)}-BaseLearner"
             with open(os.path.join(root, file), 'r') as json_file:
                 acc = float(json.load(json_file)["evaluation"]["acc"])
             if appendix not in bl_by_task_appendix:
@@ -58,7 +70,7 @@ def _load_ensemble_stats_json(args: Namespace):
         for key in data.keys():
             taskid = int(re.findall(r'\d+', key)[-1])
             appendix = key.replace(f'task_{taskid}_', '')
-            appendix = f"{appendix}-ensemble"
+            appendix = f"{name(appendix)}-Ensemble"
             if appendix not in ensembles_by_method_and_taskid.keys():
                 ensembles_by_method_and_taskid[appendix] = {}
             ensembles_by_method_and_taskid[appendix][taskid] = data[key]['evaluation']['acc']
