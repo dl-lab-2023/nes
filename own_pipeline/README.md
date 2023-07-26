@@ -24,7 +24,7 @@ We used Python 3.9 and please check `requirements.txt` for our torch version and
 
 The structure for running the random Neural Ensemble Search consists of three steps: train the base learners, apply ensemble selection and evaluate the final ensembles. We perform these steps 3 times, we first train on random Hyperparameters but fixed architecture, then we train on the best hyperparameter config from the previous step on a random NAS search method, after which we apply this method on the best architecture and hyperparameter configuration obtained from the previous steps with different weight initialization. We ensemble each result and we visualize the results with plotting functions.
 
-Instructions for running on a cluster with the MOAB cluster manager, e.g., Nemo:
+Instructions for running on a cluster with the MOAB cluster manager, e.g., Nemo and a workspace called `dl-lab`:
 
 ### Step 1: NES-RS for HPO
 
